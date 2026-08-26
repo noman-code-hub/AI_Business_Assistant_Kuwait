@@ -1,14 +1,32 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, CheckCircle2, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/app/providers/auth-provider";
 import { abaMotion } from "@/design-system/motion/tokens";
 
 export default function ForgotPasswordPage() {
+  const { sendPasswordReset, error, clearError } = useAuth();
+  const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [pending, setPending] = useState(false);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    clearError();
+    setPending(true);
+    try {
+      await sendPasswordReset(email);
+      setSent(true);
+    } catch {
+      // context
+    } finally {
+      setPending(false);
+    }
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-emerald-50/20 to-background p-6 dark:via-emerald-950/10">
@@ -44,25 +62,27 @@ export default function ForgotPasswordPage() {
               <Card className="shadow-[0_4px_24px_rgba(15,23,42,0.08)]">
                 <CardHeader>
                   <CardTitle className="text-lg">Reset password</CardTitle>
-                  <CardDescription>We&apos;ll email you instructions</CardDescription>
+                  <CardDescription>We&apos;ll email you a secure link</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form
-                    className="space-y-4"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      setSent(true);
-                    }}
-                  >
+                  <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Email address</label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input type="email" placeholder="you@business.com" className="pl-10" defaultValue="sara@noor.kw" />
+                        <Input
+                          type="email"
+                          required
+                          className="pl-10"
+                          placeholder="you@business.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                        />
                       </div>
                     </div>
-                    <Button type="button" className="w-full" onClick={() => setSent(true)}>
-                      Send reset link
+                    {error ? <p className="text-sm text-destructive">{error.message}</p> : null}
+                    <Button type="submit" className="w-full" disabled={pending}>
+                      {pending ? "Sending…" : "Send reset link"}
                     </Button>
                   </form>
                 </CardContent>
@@ -82,13 +102,17 @@ export default function ForgotPasswordPage() {
                   </div>
                   <h2 className="mt-6 text-xl font-semibold">Check your email</h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    We sent a password reset link to <strong>sara@noor.kw</strong>
-                  </p>
-                  <p className="mt-4 text-xs text-muted-foreground">
-                    Didn&apos;t receive it? Check spam or try again in a few minutes.
+                    We sent a password reset link to <strong>{email}</strong>
                   </p>
                   <div className="mt-8 flex flex-col gap-2">
-                    <Button type="button" variant="outline" onClick={() => setSent(false)}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setSent(false);
+                        clearError();
+                      }}
+                    >
                       Try another email
                     </Button>
                     <Button type="button" variant="accent" asChild>

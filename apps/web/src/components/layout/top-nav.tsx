@@ -2,22 +2,40 @@ import {
   Bell,
   Building2,
   Languages,
+  LogOut,
   Menu,
   Moon,
   Plus,
   Search,
   Sun,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useUi } from "@/app/ui-context";
+import { useAuth } from "@/app/providers/auth-provider";
+import { useTenant } from "@/app/providers/tenant-provider";
 import { business } from "@/data/dummy";
 import { cn } from "@/lib/utils";
 
 export function TopNav({ title }: { title?: string }) {
   const { toggleTheme, toggleLocale, theme, locale, setMobileNavOpen, setSearchOpen, sidebarCollapsed } =
     useUi();
+  const { user, signOut } = useAuth();
+  const { tenant, membership } = useTenant();
+  const navigate = useNavigate();
+  const displayName = user?.displayName ?? user?.email ?? business.owner;
+  const tenantName = tenant?.name ?? business.name;
+  const roleLabel = membership?.role ?? "owner";
+
+  async function handleSignOut() {
+    try {
+      await signOut();
+    } finally {
+      navigate("/login", { replace: true });
+    }
+  }
 
   return (
     <header
@@ -57,7 +75,7 @@ export function TopNav({ title }: { title?: string }) {
 
       <Button variant="outline" size="sm" className="hidden items-center gap-2 lg:inline-flex">
         <Building2 className="h-4 w-4" />
-        <span className="max-w-[140px] truncate">{business.name}</span>
+        <span className="max-w-[140px] truncate">{tenantName}</span>
       </Button>
 
       <Button variant="ghost" size="icon" aria-label="Toggle language" onClick={toggleLocale}>
@@ -76,13 +94,17 @@ export function TopNav({ title }: { title?: string }) {
         <span className="absolute end-1.5 top-1.5 h-2 w-2 rounded-full bg-emerald-500" />
       </Button>
 
+      <Button variant="ghost" size="icon" aria-label="Sign out" onClick={() => void handleSignOut()}>
+        <LogOut className="h-4 w-4" />
+      </Button>
+
       <div className="flex items-center gap-2 ps-1">
-        <Avatar name={business.owner} className="h-9 w-9" />
+        <Avatar name={displayName} src={user?.photoURL ?? undefined} className="h-9 w-9" />
         {!sidebarCollapsed ? null : null}
         <div className="hidden xl:block">
-          <p className="text-sm font-medium leading-none">{business.owner}</p>
-          <Badge variant="success" className="mt-1">
-            Owner
+          <p className="text-sm font-medium leading-none">{displayName}</p>
+          <Badge variant="success" className="mt-1 capitalize">
+            {roleLabel}
           </Badge>
         </div>
       </div>

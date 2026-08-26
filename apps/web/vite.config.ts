@@ -12,5 +12,14 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Required for Firebase Google popup auth in Chrome / Vite.
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+    },
+  },
+  preview: {
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+    },
   },
 });

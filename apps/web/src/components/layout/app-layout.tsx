@@ -3,7 +3,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopNav } from "@/components/layout/top-nav";
 import { useUi } from "@/app/ui-context";
+import { useTenant } from "@/app/providers/tenant-provider";
 import { GlobalSearch } from "@/components/layout/global-search";
+import { Spinner } from "@/components/feedback/spinner";
 import { cn } from "@/lib/utils";
 
 const titles: Record<string, string> = {
@@ -37,6 +39,7 @@ const titles: Record<string, string> = {
 
 export function AppLayout() {
   const { sidebarCollapsed, locale } = useUi();
+  const { loading, error, refresh } = useTenant();
   const location = useLocation();
   const pad = sidebarCollapsed ? "lg:ps-[72px]" : "lg:ps-[264px]";
   const padRtl = sidebarCollapsed ? "lg:pe-[72px]" : "lg:pe-[264px]";
@@ -47,17 +50,46 @@ export function AppLayout() {
       <div className={cn(locale === "ar" ? padRtl : pad, "transition-[padding] duration-200")}>
         <TopNav title={titles[location.pathname] ?? "Workspace"} />
         <main className="mx-auto max-w-[1440px] px-4 py-6 md:px-6 md:py-8">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Outlet />
-            </motion.div>
-          </AnimatePresence>
+          {loading ? (
+            <div className="flex min-h-[40vh] items-center justify-center gap-3 text-sm text-muted-foreground">
+              <Spinner />
+              Loading workspace from Firestore…
+            </div>
+          ) : error ? (
+            <div className="mx-auto max-w-lg rounded-2xl border border-destructive/30 bg-card p-6 text-center">
+              <h2 className="text-lg font-semibold">Firestore access failed</h2>
+              <p className="mt-2 text-sm text-muted-foreground">{error}</p>
+              <a
+                className="mt-4 inline-block text-sm font-medium text-emerald-600 hover:underline"
+                href="https://console.firebase.google.com/project/ai-business-assistant-kuwait/firestore/rules"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open Firestore Rules →
+              </a>
+              <div className="mt-3">
+                <button
+                  type="button"
+                  className="text-sm font-medium text-emerald-600 hover:underline"
+                  onClick={() => void refresh()}
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          ) : (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Outlet />
+              </motion.div>
+            </AnimatePresence>
+          )}
         </main>
       </div>
       <GlobalSearch />

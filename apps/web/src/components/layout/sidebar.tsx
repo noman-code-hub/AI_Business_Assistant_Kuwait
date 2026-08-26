@@ -27,10 +27,11 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useUi } from "@/app/ui-context";
+import { useAuth } from "@/app/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 
 const groups = [
@@ -81,14 +82,24 @@ const groups = [
       { to: "/app/settings", label: "Settings", icon: Settings },
       { to: "/app/help", label: "Help Center", icon: CircleHelp },
       { to: "/app/profile", label: "Profile", icon: UserRound },
-      { to: "/login", label: "Logout", icon: LogOut },
     ],
   },
 ];
 
 export function Sidebar() {
   const { sidebarCollapsed, toggleSidebar, locale, mobileNavOpen, setMobileNavOpen } = useUi();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   const collapsed = sidebarCollapsed && !mobileNavOpen;
+
+  async function handleLogout() {
+    setMobileNavOpen(false);
+    try {
+      await signOut();
+    } finally {
+      navigate("/login", { replace: true });
+    }
+  }
 
   return (
     <>
@@ -155,13 +166,26 @@ export function Sidebar() {
           ))}
         </nav>
 
-        <div className="border-t border-white/5 p-3">
+        <div className="space-y-1 border-t border-white/5 p-3">
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-slate-300 hover:bg-sidebar-accent hover:text-white"
+            onClick={() => void handleLogout()}
+            title="Logout"
+          >
+            <LogOut className="h-4 w-4" />
+            {!collapsed ? <span>Logout</span> : null}
+          </Button>
           <Button
             variant="ghost"
             className="w-full justify-start text-slate-300 hover:bg-sidebar-accent hover:text-white"
             onClick={toggleSidebar}
           >
-            {collapsed ? <ChevronRight className="h-4 w-4 rtl:rotate-180" /> : <ChevronLeft className="h-4 w-4 rtl:rotate-180" />}
+            {collapsed ? (
+              <ChevronRight className="h-4 w-4 rtl:rotate-180" />
+            ) : (
+              <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
+            )}
             {!collapsed ? <span>Collapse</span> : null}
           </Button>
         </div>

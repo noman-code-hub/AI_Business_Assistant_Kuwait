@@ -1,35 +1,76 @@
-import { motion } from "framer-motion";
-import { Bell, Globe, Lock, Mail, Shield, Smartphone, User } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { Mail, Shield, User } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PageHeader } from "@/components/ui/primitives";
-import { business } from "@/data/dummy";
+import { PageHeader } from "@/components/common/page-header";
+import { useAuth } from "@/app/providers/auth-provider";
+import { useTenant } from "@/app/providers/tenant-provider";
+import { updateProfile } from "firebase/auth";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
+import { Collections } from "@/services/firestore";
 
 export default function ProfilePage() {
+  const { user, firebaseUser, reloadUser, getIdToken, error, clearError } = useAuth();
+  const { tenant, membership, profile, refresh } = useTenant();
+  const [displayName, setDisplayName] = useState(user?.displayName ?? "");
+  const [saving, setSaving] = useState(false);
+  const [tokenPreview, setTokenPreview] = useState<string | null>(null);
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
+
+  async function onSave(e: FormEvent) {
+    e.preventDefault();
+    if (!firebaseUser) return;
+    clearError();
+    setSaving(true);
+    setSaveMsg(null);
+    try {
+      await updateProfile(firebaseUser, { displayName: displayName.trim() });
+      await setDoc(
+        doc(db, Collections.users, firebaseUser.uid),
+        {
+          displayName: displayName.trim(),
+          email: firebaseUser.email,
+          photoURL: firebaseUser.photoURL,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+      await reloadUser();
+      await refresh();
+      setSaveMsg("Profile saved.");
+    } catch (err) {
+      setSaveMsg(err instanceof Error ? err.message : "Failed to save profile");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function showToken() {
+    const token = await getIdToken(true);
+    setTokenPreview(token ? `${token.slice(0, 24)}… (${token.length} chars)` : null);
+  }
+
+  const name = user?.displayName ?? user?.email ?? "User";
+
   return (
     <div className="mx-auto max-w-3xl space-y-8">
-      <PageHeader title="Profile" description="Your personal account settings." />
+      <PageHeader title="Profile" description="Your account and session." />
 
       <Card>
         <CardContent className="flex flex-col items-center gap-6 p-8 sm:flex-row sm:items-start">
-          <Avatar name={business.owner} className="h-24 w-24 text-xl" />
+          <Avatar name={name} src={user?.photoURL ?? undefined} className="h-24 w-24 text-xl" />
           <div className="flex-1 text-center sm:text-left">
-            <h2 className="text-xl font-semibold">{business.owner}</h2>
-            <p className="text-muted-foreground">Owner · {business.name}</p>
-            <Badge variant="success" className="mt-3">
-              Verified
+            <h2 className="text-xl font-semibold">{name}</h2>
+            <p className="text-muted-foreground">
+              {membership?.role ?? "member"} · {tenant?.name ?? "Workspace"}
+            </p>
+            <Badge variant={user?.emailVerified ? "success" : "warning"} className="mt-3">
+              {user?.emailVerified ? "Email verified" : "Email not verified"}
             </Badge>
-            <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
-              <Button type="button" variant="outline" size="sm">
-                Change photo
-              </Button>
-              <Button type="button" variant="accent" size="sm">
-                Edit profile
-              </Button>
-            </div>
           </div>
         </CardContent>
       </Card>
@@ -41,47 +82,27 @@ export default function ProfilePage() {
             Personal information
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Full name</label>
-              <Input defaultValue={business.owner} />
+        <CardContent>
+          <form className="space-y-4" onSubmit={(e) => void onSave(e)}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Full name</label>
+                <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Email</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input className="pl-10" value={user?.email ?? ""} disabled />
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Email</label>
-              <Input defaultValue="sara@noor.kw" type="email" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Phone</label>
-              <Input defaultValue="+965 5000 1234" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Job title</label>
-              <Input defaultValue="Owner & CEO" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-emerald-600" />
-            Preferences
-          </CardTitle>
-          <CardDescription>Language, timezone, and display</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Language</label>
-              <Input defaultValue="English (US)" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Timezone</label>
-              <Input defaultValue="Asia/Kuwait (GMT+3)" />
-            </div>
-          </div>
+            {saveMsg ? <p className="text-sm text-muted-foreground">{saveMsg}</p> : null}
+            {error ? <p className="text-sm text-destructive">{error.message}</p> : null}
+            <Button type="submit" disabled={saving}>
+              {saving ? "Saving…" : "Save profile"}
+            </Button>
+          </form>
         </CardContent>
       </Card>
 
@@ -89,62 +110,23 @@ export default function ProfilePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-emerald-600" />
-            Security
+            Session
           </CardTitle>
+          <CardDescription>
+            Firebase Auth persistence keeps you signed in. Use the ID token for API calls.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between rounded-2xl border border-border/80 p-4">
-            <div className="flex items-center gap-3">
-              <Lock className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">Password</p>
-                <p className="text-xs text-muted-foreground">Last changed 30 days ago</p>
-              </div>
-            </div>
-            <Button type="button" variant="outline" size="sm">
-              Update
-            </Button>
-          </div>
-          <div className="flex items-center justify-between rounded-2xl border border-border/80 p-4">
-            <div className="flex items-center gap-3">
-              <Smartphone className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">Two-factor auth</p>
-                <p className="text-xs text-muted-foreground">Authenticator app enabled</p>
-              </div>
-            </div>
-            <Badge variant="success">On</Badge>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-emerald-600" />
-            Notifications
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {[
-            { icon: Mail, label: "Email digest", desc: "Weekly summary" },
-            { icon: Bell, label: "Push notifications", desc: "Real-time alerts" },
-          ].map((item) => (
-            <motion.div
-              key={item.label}
-              whileHover={{ scale: 1.01 }}
-              className="flex items-center justify-between rounded-2xl border border-border/80 p-4"
-            >
-              <div className="flex items-center gap-3">
-                <item.icon className="h-5 w-5 text-emerald-600" />
-                <div>
-                  <p className="text-sm font-medium">{item.label}</p>
-                  <p className="text-xs text-muted-foreground">{item.desc}</p>
-                </div>
-              </div>
-              <input type="checkbox" defaultChecked className="h-4 w-4 rounded accent-emerald-600" />
-            </motion.div>
-          ))}
+        <CardContent className="space-y-3 text-sm">
+          <p>
+            <span className="text-muted-foreground">UID:</span> {user?.uid}
+          </p>
+          <p>
+            <span className="text-muted-foreground">Locale (profile):</span> {profile?.locale ?? "en"}
+          </p>
+          <Button type="button" variant="outline" size="sm" onClick={() => void showToken()}>
+            Refresh ID token
+          </Button>
+          {tokenPreview ? <p className="break-all font-mono text-xs text-muted-foreground">{tokenPreview}</p> : null}
         </CardContent>
       </Card>
     </div>

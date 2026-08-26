@@ -1,19 +1,43 @@
 {
   "name": "ai-business-assistant-kuwait",
   "private": true,
-  "description": "Monorepo workspace root — architecture foundation. Tooling bootstrap comes next.",
+  "description": "Enterprise multi-tenant AI Business Assistant SaaS for Kuwait SMEs",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --prefix apps/web",
-    "build": "npm run build --prefix apps/web",
-    "dev:web": "npm run dev --prefix apps/web",
-    "build:web": "npm run build --prefix apps/web",
+    "dev": "npm run dev -w @aba/web",
+    "dev:web": "npm run dev -w @aba/web",
+    "dev:api": "npm run dev -w @aba/api",
+    "build": "npm run build -w @aba/shared && npm run build -w @aba/api && npm run build -w @aba/web",
+    "build:shared": "npm run build -w @aba/shared",
+    "build:api": "npm run build -w @aba/shared && npm run build -w @aba/api",
+    "build:web": "npm run build -w @aba/web",
+    "typecheck": "npm run typecheck -w @aba/shared && npm run typecheck -w @aba/api && npm run typecheck -w @aba/web",
+    "lint": "npm run lint -w @aba/shared && npm run lint -w @aba/api && npm run lint -w @aba/web",
+    "test": "npm run test -w @aba/web && npm run test -w @aba/api",
+    "test:rules": "bash scripts/run-rules-tests.sh",
+    "firebase:emulators": "npx --yes firebase-tools@14.12.0 emulators:start --config firebase/firebase.json",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "docs:arch": "echo See docs/architecture/ARCHITECTURE.md"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.1",
+    "eslint": "^9.30.1",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "prettier": "^3.6.2",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.35.1"
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "firebase": "^12.18.0"
   }
 }

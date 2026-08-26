@@ -13,12 +13,16 @@ coverage/
 
 # Environment & secrets
 .env
-.env.*
-!.env.example
-apps/web/.env/
-apps/api/.env/
+.env.local
+.env.*.local
+apps/web/.env
+apps/api/.env
 **/serviceAccount*.json
 **/firebase-adminsdk*.json
+
+# Keep examples and stage overlays
+!.env.example
+!environments/**/*.env
 
 # Logs & OS
 logs/
@@ -40,10 +44,9 @@ firestore-debug.log
 ui-debug.log
 pubsub-debug.log
 
-# Test / cache
-.cache/
-.tmp/
-.temp/
+# Local tooling (JDK for Firebase emulator, etc.)
+.tools/
+
 
 # Accidental nested Vite JS scaffold (not part of monorepo)
 AI_Business_Assistant_Kuwait/

@@ -1,10 +1,17 @@
 # Environment Templates
 
-Place non-secret, stage-specific overlays here during bootstrap:
+Non-secret, stage-specific overlays. Copy into local `.env` files during bootstrap.
 
-- `local/` — developer defaults
-- `development/` — shared dev project
-- `staging/` — pre-prod
-- `production/` — prod
+| Stage | Purpose |
+|-------|---------|
+| `local/` | Developer defaults |
+| `development/` | Shared dev project |
+| `staging/` | Pre-prod |
+| `production/` | Prod |
 
-Secrets never live in git. Use `.env.example` files under `apps/*` as the contract.
+Secrets never live in git. Use `.env.example` files under `apps/*` as the full contract.
+
+```bash
+cp environments/local/api.env apps/api/.env
+cp environments/local/web.env apps/web/.env
+```

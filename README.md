@@ -3,8 +3,8 @@
 Enterprise multi-tenant AI Business Assistant SaaS for Kuwait SMEs  
 (Salons · Clinics · Restaurants · Car Rental · Real Estate · Gyms · Retail · Events · Home Services · SMEs)
 
-> **Current phase: Architecture foundation only.**  
-> No feature implementation has been generated yet.
+> **Current phase: Phase 1 — Firebase & Database foundation** (see [PHASE1_FIREBASE_DATABASE.md](docs/architecture/PHASE1_FIREBASE_DATABASE.md)).  
+> Auth UI and client Firestore bootstrap exist; CRM/AI/WhatsApp product features are later phases.
 
 ---
 
@@ -20,6 +20,7 @@ Enterprise multi-tenant AI Business Assistant SaaS for Kuwait SMEs
 | [Auth & Authorization](docs/architecture/AUTH_AUTHORIZATION.md) | Firebase Auth + RBAC |
 | [API Architecture](docs/architecture/API_ARCHITECTURE.md) | REST `/api/v1` design |
 | [Firestore Schema](docs/architecture/FIRESTORE_SCHEMA.md) | Collections & indexes |
+| [Phase 1 Firebase & Database](docs/architecture/PHASE1_FIREBASE_DATABASE.md) | Implemented data layer |
 | [Security Rules](docs/architecture/SECURITY_RULES.md) | Rules strategy |
 
 ### UI / UX Design
@@ -80,15 +81,22 @@ Production-ready · Scalable · Reusable · Modular · Clean Architecture · Fea
 
 ---
 
-## Run the UI (current)
+## Run locally
 
 ```bash
-cd apps/web
 npm install
-npm run dev
+npm run build:shared
+npm run dev:web    # http://localhost:5173
+npm run dev:api    # http://localhost:8080/api/v1/health
 ```
 
-Open **http://localhost:5173** — full premium dashboard with dummy data (no backend).
+```bash
+npm run typecheck
+npm run lint
+npm run build
+```
+
+Open **http://localhost:5173** — full premium dashboard with dummy data.
 
 ## Next Step
 

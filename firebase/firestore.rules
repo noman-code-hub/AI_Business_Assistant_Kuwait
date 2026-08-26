@@ -1,12 +1,161 @@
 rules_version = '2';
 
-// ARCHITECTURE SKELETON — refine during implementation.
-// v1 preference: most writes via Admin SDK (Express API).
+// Tenant isolation: Business A must never access Business B data.
+// Membership doc id: `{uid}_{tenantId}` in `tenantMemberships`.
+// Admin SDK (Express API) bypasses these rules — backend must still check membership.
 
 service cloud.firestore {
   match /databases/{database}/documents {
     function isSignedIn() {
       return request.auth != null;
+    }
+
+    function membershipId(tenantId) {
+      return request.auth.uid + '_' + tenantId;
+    }
+
+    function membershipPath(tenantId) {
+      return /databases/$(database)/documents/tenantMemberships/$(membershipId(tenantId));
+    }
+
+    function isTenantMember(tenantId) {
+      return isSignedIn()
+        && exists(membershipPath(tenantId))
+        && get(membershipPath(tenantId)).data.status == 'active'
+        && get(membershipPath(tenantId)).data.userId == request.auth.uid
+        && get(membershipPath(tenantId)).data.tenantId == tenantId;
+    }
+
+    function isOwnerOrAdmin(tenantId) {
+      return isTenantMember(tenantId)
+        && get(membershipPath(tenantId)).data.role in ['owner', 'admin'];
+    }
+
+    function tenantIdMatches(tenantId) {
+      return request.resource.data.tenantId == tenantId;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create, update: if isSignedIn() && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    match /tenants/{tenantId} {
+      allow read: if isTenantMember(tenantId);
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isOwnerOrAdmin(tenantId);
+      allow delete: if false;
+
+      // Shared pattern for tenant-owned business data
+      match /customers/{docId} {
+        allow read: if isTenantMember(tenantId);
+        allow create, update: if isTenantMember(tenantId) && tenantIdMatches(tenantId);
+        allow delete: if isOwnerOrAdmin(tenantId);
+      }
+
+      match /services/{docId} {
+        allow read: if isTenantMember(tenantId);
+        allow create, update: if isTenantMember(tenantId) && tenantIdMatches(tenantId);
+        allow delete: if isOwnerOrAdmin(tenantId);
+      }
+
+      match /products/{docId} {
+        allow read: if isTenantMember(tenantId);
+        allow create, update: if isTenantMember(tenantId) && tenantIdMatches(tenantId);
+        allow delete: if isOwnerOrAdmin(tenantId);
+      }
+
+      match /appointments/{docId} {
+        allow read: if isTenantMember(tenantId);
+        allow create, update: if isTenantMember(tenantId) && tenantIdMatches(tenantId);
+        allow delete: if isOwnerOrAdmin(tenantId);
+      }
+
+      match /quotations/{docId} {
+        allow read: if isTenantMember(tenantId);
+        allow create, update: if isTenantMember(tenantId) && tenantIdMatches(tenantId);
+        allow delete: if isOwnerOrAdmin(tenantId);
+      }
+
+      match /invoices/{docId} {
+        allow read: if isTenantMember(tenantId);
+        allow create, update: if isTenantMember(tenantId) && tenantIdMatches(tenantId);
+        allow delete: if isOwnerOrAdmin(tenantId);
+      }
+
+      match /payments/{docId} {
+        allow read: if isTenantMember(tenantId);
+        allow create, update: if isTenantMember(tenantId) && tenantIdMatches(tenantId);
+        allow delete: if isOwnerOrAdmin(tenantId);
+      }
+
+      match /conversations/{conversationId} {
+        allow read: if isTenantMember(tenantId);
+        allow create, update: if isTenantMember(tenantId) && tenantIdMatches(tenantId);
+        allow delete: if isOwnerOrAdmin(tenantId);
+
+        match /messages/{messageId} {
+          allow read: if isTenantMember(tenantId);
+          allow create, update: if isTenantMember(tenantId)
+            && request.resource.data.tenantId == tenantId
+            && request.resource.data.conversationId == conversationId;
+          allow delete: if isOwnerOrAdmin(tenantId);
+        }
+      }
+
+      match /notifications/{docId} {
+        allow read: if isTenantMember(tenantId);
+        allow create, update: if isTenantMember(tenantId) && tenantIdMatches(tenantId);
+        allow delete: if isOwnerOrAdmin(tenantId);
+      }
+
+      match /automations/{docId} {
+        allow read: if isTenantMember(tenantId);
+        allow create, update: if isOwnerOrAdmin(tenantId) && tenantIdMatches(tenantId);
+        allow delete: if isOwnerOrAdmin(tenantId);
+      }
+
+      match /auditLogs/{docId} {
+        allow read: if isOwnerOrAdmin(tenantId);
+        allow create: if isTenantMember(tenantId) && tenantIdMatches(tenantId);
+        allow update, delete: if false;
+      }
+
+      match /subscriptions/{docId} {
+        allow read: if isOwnerOrAdmin(tenantId);
+        allow write: if false; // API / billing only
+      }
+
+      match /usage/{docId} {
+        allow read: if isOwnerOrAdmin(tenantId);
+        allow write: if false; // API only
+      }
+
+      match /bookings/{docId} {
+        allow read: if isTenantMember(tenantId);
+        allow create, update: if isTenantMember(tenantId) && tenantIdMatches(tenantId);
+        allow delete: if isOwnerOrAdmin(tenantId);
+      }
+
+      match /staff/{docId} {
+        allow read: if isTenantMember(tenantId);
+        allow create, update: if isOwnerOrAdmin(tenantId) && tenantIdMatches(tenantId);
+        allow delete: if isOwnerOrAdmin(tenantId);
+      }
+    }
+
+    match /tenantMemberships/{membershipId} {
+      allow read: if isSignedIn()
+        && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.role == 'owner'
+        && request.resource.data.status == 'active';
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid;
+      allow delete: if false;
     }
 
     match /{document=**} {
