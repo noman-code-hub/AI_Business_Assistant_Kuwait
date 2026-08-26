@@ -1,0 +1,102 @@
+/**
+ * ABA Kuwait Design Tokens
+ * Source of truth for Tailwind / CSS variables.
+ * Design phase only — wire into Tailwind theme during UI bootstrap.
+ */
+
+:root {
+  /* Brand */
+  --aba-primary: #2563eb;
+  --aba-primary-hover: #1d4ed8;
+  --aba-primary-foreground: #ffffff;
+  --aba-primary-muted: #dbeafe;
+
+  --aba-secondary: #0f172a;
+  --aba-secondary-foreground: #f8fafc;
+
+  --aba-accent: #14b8a6;
+  --aba-accent-hover: #0d9488;
+  --aba-accent-foreground: #042f2e;
+  --aba-accent-muted: #ccfbf1;
+
+  /* Semantic */
+  --aba-success: #10b981;
+  --aba-success-muted: #d1fae5;
+  --aba-warning: #f59e0b;
+  --aba-warning-muted: #fef3c7;
+  --aba-danger: #ef4444;
+  --aba-danger-muted: #fee2e2;
+  --aba-info: #2563eb;
+
+  /* Neutrals */
+  --aba-gray-50: #f8fafc;
+  --aba-gray-100: #f1f5f9;
+  --aba-gray-200: #e2e8f0;
+  --aba-gray-300: #cbd5e1;
+  --aba-gray-400: #94a3b8;
+  --aba-gray-500: #64748b;
+  --aba-gray-600: #475569;
+  --aba-gray-700: #334155;
+  --aba-gray-800: #1e293b;
+  --aba-gray-900: #0f172a;
+
+  /* Spacing (8px system) */
+  --aba-space-1: 0.25rem; /* 4 */
+  --aba-space-2: 0.5rem; /* 8 */
+  --aba-space-3: 0.75rem; /* 12 */
+  --aba-space-4: 1rem; /* 16 */
+  --aba-space-5: 1.25rem; /* 20 */
+  --aba-space-6: 1.5rem; /* 24 */
+  --aba-space-8: 2rem; /* 32 */
+  --aba-space-10: 2.5rem; /* 40 */
+  --aba-space-12: 3rem; /* 48 */
+  --aba-space-16: 4rem; /* 64 */
+
+  /* Radius */
+  --aba-radius-sm: 0.375rem; /* 6 */
+  --aba-radius-md: 0.625rem; /* 10 */
+  --aba-radius-lg: 0.875rem; /* 14 */
+  --aba-radius-xl: 1.25rem; /* 20 */
+  --aba-radius-full: 9999px;
+
+  /* Elevation */
+  --aba-shadow-xs: 0 1px 2px rgb(15 23 42 / 0.04);
+  --aba-shadow-sm: 0 1px 3px rgb(15 23 42 / 0.06), 0 1px 2px rgb(15 23 42 / 0.04);
+  --aba-shadow-md: 0 4px 12px rgb(15 23 42 / 0.08);
+  --aba-shadow-lg: 0 12px 32px rgb(15 23 42 / 0.12);
+  --aba-shadow-focus: 0 0 0 3px rgb(37 99 235 / 0.25);
+
+  /* Motion */
+  --aba-duration-fast: 120ms;
+  --aba-duration-normal: 200ms;
+  --aba-duration-slow: 320ms;
+  --aba-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Layout */
+  --aba-sidebar-width: 264px;
+  --aba-sidebar-collapsed: 72px;
+  --aba-navbar-height: 64px;
+  --aba-content-max: 1440px;
+  --aba-settings-nav-width: 220px;
+
+  /* Typography */
+  --aba-font-sans: "Inter", "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --aba-font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --aba-text-display: 2.25rem;
+  --aba-text-h1: 1.875rem;
+  --aba-text-h2: 1.5rem;
+  --aba-text-h3: 1.25rem;
+  --aba-text-h4: 1rem;
+  --aba-text-body: 0.875rem;
+  --aba-text-body-lg: 1rem;
+  --aba-text-caption: 0.75rem;
+  --aba-text-overline: 0.6875rem;
+
+  /* Z-index scale */
+  --aba-z-sidebar: 40;
+  --aba-z-navbar: 50;
+  --aba-z-drawer: 60;
+  --aba-z-modal: 70;
+  --aba-z-toast: 80;
+}

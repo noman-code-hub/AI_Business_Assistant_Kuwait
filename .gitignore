@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+**/node_modules/
+.pnpm-store/
+
+# Builds
+dist/
+build/
+.next/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+apps/web/.env/
+apps/api/.env/
+**/serviceAccount*.json
+**/firebase-adminsdk*.json
+
+# Logs & OS
+logs/
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+pubsub-debug.log
+
+# Test / cache
+.cache/
+.tmp/
+.temp/
+
+# Accidental nested Vite JS scaffold (not part of monorepo)
+AI_Business_Assistant_Kuwait/

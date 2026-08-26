@@ -1,0 +1,16 @@
+rules_version = '2';
+
+// ARCHITECTURE SKELETON — refine during implementation.
+// v1 preference: most writes via Admin SDK (Express API).
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

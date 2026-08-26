@@ -1,0 +1,64 @@
+/**
+ * ABA Kuwait Theme Surfaces — Light / Dark
+ * Toggle via [data-theme="light"|"dark"] on <html>
+ */
+
+:root,
+[data-theme="light"] {
+  --bg-app: var(--aba-gray-50);
+  --bg-surface: #ffffff;
+  --bg-surface-raised: #ffffff;
+  --bg-muted: var(--aba-gray-100);
+  --bg-sidebar: var(--aba-secondary);
+  --bg-sidebar-hover: var(--aba-gray-800);
+  --bg-glass: rgb(255 255 255 / 0.72);
+
+  --border-default: var(--aba-gray-200);
+  --border-strong: var(--aba-gray-300);
+
+  --text-primary: var(--aba-gray-900);
+  --text-secondary: var(--aba-gray-500);
+  --text-inverse: var(--aba-gray-50);
+  --text-sidebar: var(--aba-gray-300);
+  --text-sidebar-active: #ffffff;
+
+  --ring: var(--aba-primary);
+}
+
+[data-theme="dark"] {
+  --bg-app: #020617;
+  --bg-surface: var(--aba-gray-900);
+  --bg-surface-raised: var(--aba-gray-800);
+  --bg-muted: var(--aba-gray-800);
+  --bg-sidebar: #020617;
+  --bg-sidebar-hover: var(--aba-gray-900);
+  --bg-glass: rgb(15 23 42 / 0.72);
+
+  --border-default: var(--aba-gray-800);
+  --border-strong: var(--aba-gray-700);
+
+  --text-primary: var(--aba-gray-50);
+  --text-secondary: var(--aba-gray-400);
+  --text-inverse: var(--aba-gray-900);
+  --text-sidebar: var(--aba-gray-400);
+  --text-sidebar-active: #ffffff;
+
+  --ring: var(--aba-primary);
+}
+
+/* RTL helper — pair with dir="rtl" on html */
+[dir="rtl"] {
+  --aba-sidebar-edge: right;
+}
+
+[dir="ltr"] {
+  --aba-sidebar-edge: left;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --aba-duration-fast: 0ms;
+    --aba-duration-normal: 0ms;
+    --aba-duration-slow: 0ms;
+  }
+}
