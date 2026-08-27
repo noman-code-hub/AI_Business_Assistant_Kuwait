@@ -1,8 +1,11 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { PERMISSIONS } from "@aba/shared";
 import { UiProvider } from "@/app/ui-context";
 import { AuthProvider } from "@/app/providers/auth-provider";
 import { TenantProvider } from "@/app/providers/tenant-provider";
+import { PermissionsProvider } from "@/app/providers/permissions-provider";
 import { GuestOnly, RequireVerifiedEmail } from "@/components/auth/require-auth";
+import { RequirePermission } from "@/components/auth/require-permission";
 import { AppLayout } from "@/components/layout/app-layout";
 
 import DashboardPage from "@/pages/dashboard";
@@ -31,6 +34,7 @@ import HelpPage from "@/pages/help";
 import ProfilePage from "@/pages/profile";
 import NotificationsPage from "@/pages/notifications";
 import SubscriptionPage from "@/pages/subscription";
+import OnboardingPage from "@/pages/onboarding";
 
 import LoginPage from "@/pages/auth/login";
 import RegisterPage from "@/pages/auth/register";
@@ -74,11 +78,24 @@ export default function App() {
             <Route path="/offline" element={<OfflinePage />} />
 
             <Route
+              path="/onboarding"
+              element={
+                <RequireVerifiedEmail>
+                  <TenantProvider>
+                    <OnboardingPage />
+                  </TenantProvider>
+                </RequireVerifiedEmail>
+              }
+            />
+
+            <Route
               path="/app"
               element={
                 <RequireVerifiedEmail>
                   <TenantProvider>
-                    <AppLayout />
+                    <PermissionsProvider>
+                      <AppLayout />
+                    </PermissionsProvider>
                   </TenantProvider>
                 </RequireVerifiedEmail>
               }
@@ -89,27 +106,85 @@ export default function App() {
               <Route path="ai-chat" element={<AiChatPage />} />
               <Route path="appointments" element={<AppointmentsPage />} />
               <Route path="calendar" element={<CalendarPage />} />
-              <Route path="customers" element={<CustomersPage />} />
+              <Route
+                path="customers"
+                element={
+                  <RequirePermission permission={PERMISSIONS.CUSTOMERS_READ}>
+                    <CustomersPage />
+                  </RequirePermission>
+                }
+              />
               <Route path="crm" element={<CrmPage />} />
-              <Route path="invoices" element={<InvoicesPage />} />
+              <Route
+                path="invoices"
+                element={
+                  <RequirePermission permission={PERMISSIONS.INVOICES_READ}>
+                    <InvoicesPage />
+                  </RequirePermission>
+                }
+              />
               <Route path="quotations" element={<QuotationsPage />} />
-              <Route path="products" element={<ProductsPage />} />
-              <Route path="services" element={<ServicesPage />} />
+              <Route
+                path="products"
+                element={
+                  <RequirePermission permission={PERMISSIONS.PRODUCTS_READ}>
+                    <ProductsPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="services"
+                element={
+                  <RequirePermission permission={PERMISSIONS.SERVICES_READ}>
+                    <ServicesPage />
+                  </RequirePermission>
+                }
+              />
               <Route path="marketing" element={<MarketingPage />} />
               <Route path="campaigns" element={<CampaignsPage />} />
               <Route path="whatsapp" element={<WhatsappPage />} />
               <Route path="analytics" element={<AnalyticsPage />} />
-              <Route path="reports" element={<ReportsPage />} />
+              <Route
+                path="reports"
+                element={
+                  <RequirePermission permission={PERMISSIONS.REPORTS_READ}>
+                    <ReportsPage />
+                  </RequirePermission>
+                }
+              />
               <Route path="tasks" element={<TasksPage />} />
-              <Route path="team" element={<TeamPage />} />
+              <Route
+                path="team"
+                element={
+                  <RequirePermission permission={PERMISSIONS.TEAM_READ}>
+                    <TeamPage />
+                  </RequirePermission>
+                }
+              />
               <Route path="automation" element={<AutomationPage />} />
               <Route path="knowledge" element={<KnowledgePage />} />
               <Route path="integrations" element={<IntegrationsPage />} />
-              <Route path="settings" element={<SettingsPage />} />
+              <Route
+                path="settings"
+                element={
+                  <RequirePermission
+                    anyOf={[PERMISSIONS.SETTINGS_READ, PERMISSIONS.SETTINGS_MANAGE]}
+                  >
+                    <SettingsPage />
+                  </RequirePermission>
+                }
+              />
               <Route path="help" element={<HelpPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="notifications" element={<NotificationsPage />} />
-              <Route path="subscription" element={<SubscriptionPage />} />
+              <Route
+                path="subscription"
+                element={
+                  <RequirePermission permission={PERMISSIONS.SUBSCRIPTION_READ}>
+                    <SubscriptionPage />
+                  </RequirePermission>
+                }
+              />
             </Route>
 
             <Route path="*" element={<NotFoundPage />} />

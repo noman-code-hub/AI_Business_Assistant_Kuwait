@@ -6,10 +6,12 @@ export type AuthenticatedUser = {
   emailVerified?: boolean;
 };
 
+/** Trusted request authorization context (never accept role/permissions from the client). */
 export type RequestContext = {
   requestId: string;
   user?: AuthenticatedUser;
   tenantId?: string;
+  membershipId?: string;
   role?: Role;
 };
 
@@ -19,6 +21,7 @@ declare global {
       requestId: string;
       user?: AuthenticatedUser;
       tenantId?: string;
+      membershipId?: string;
       role?: Role;
       startedAt: number;
     }

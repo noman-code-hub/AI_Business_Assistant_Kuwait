@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { healthRouter } from "../modules/health/routes/health.routes.js";
 import { authRouter } from "../modules/auth/routes/auth.routes.js";
+import { tenantsRouter } from "../modules/tenants/routes/tenants.routes.js";
+import { customersRouter } from "../modules/customers/routes/customers.routes.js";
+import { servicesRouter } from "../modules/services-catalog/routes/services.routes.js";
+import { membershipsRouter } from "../modules/memberships/routes/memberships.routes.js";
 import { createStubRouter } from "./create-stub-router.js";
 
 export function registerRoutes(): Router {
@@ -8,10 +12,12 @@ export function registerRoutes(): Router {
 
   api.use("/health", healthRouter);
   api.use("/auth", authRouter);
+  api.use("/tenants", tenantsRouter);
+  api.use("/customers", customersRouter);
+  api.use("/services", servicesRouter);
+  api.use("/memberships", membershipsRouter);
 
-  api.use("/tenants", createStubRouter("tenants"));
   api.use("/users", createStubRouter("users"));
-  api.use("/customers", createStubRouter("customers"));
   api.use("/appointments", createStubRouter("appointments"));
   api.use("/bookings", createStubRouter("bookings"));
   api.use("/inbox", createStubRouter("inbox"));
@@ -21,11 +27,9 @@ export function registerRoutes(): Router {
   api.use("/invoices", createStubRouter("invoices"));
   api.use("/inventory", createStubRouter("inventory"));
   api.use("/staff", createStubRouter("staff"));
-  api.use("/services", createStubRouter("services"));
   api.use("/properties", createStubRouter("properties"));
   api.use("/vehicles", createStubRouter("vehicles"));
   api.use("/events", createStubRouter("events"));
-  api.use("/memberships", createStubRouter("memberships"));
   api.use("/menu", createStubRouter("menu"));
   api.use("/reports", createStubRouter("reports"));
   api.use("/billing", createStubRouter("billing"));

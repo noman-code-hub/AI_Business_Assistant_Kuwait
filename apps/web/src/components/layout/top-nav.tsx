@@ -1,6 +1,5 @@
 import {
   Bell,
-  Building2,
   Languages,
   LogOut,
   Menu,
@@ -16,18 +15,17 @@ import { Badge } from "@/components/ui/badge";
 import { useUi } from "@/app/ui-context";
 import { useAuth } from "@/app/providers/auth-provider";
 import { useTenant } from "@/app/providers/tenant-provider";
-import { business } from "@/data/dummy";
+import { BusinessSwitcher } from "@/components/layout/business-switcher";
 import { cn } from "@/lib/utils";
 
 export function TopNav({ title }: { title?: string }) {
   const { toggleTheme, toggleLocale, theme, locale, setMobileNavOpen, setSearchOpen, sidebarCollapsed } =
     useUi();
   const { user, signOut } = useAuth();
-  const { tenant, membership } = useTenant();
+  const { membershipRole } = useTenant();
   const navigate = useNavigate();
-  const displayName = user?.displayName ?? user?.email ?? business.owner;
-  const tenantName = tenant?.name ?? business.name;
-  const roleLabel = membership?.role ?? "owner";
+  const displayName = user?.displayName ?? user?.email ?? "User";
+  const roleLabel = membershipRole ?? "member";
 
   async function handleSignOut() {
     try {
@@ -73,10 +71,9 @@ export function TopNav({ title }: { title?: string }) {
         Quick Create
       </Button>
 
-      <Button variant="outline" size="sm" className="hidden items-center gap-2 lg:inline-flex">
-        <Building2 className="h-4 w-4" />
-        <span className="max-w-[140px] truncate">{tenantName}</span>
-      </Button>
+      <div className="hidden lg:block">
+        <BusinessSwitcher />
+      </div>
 
       <Button variant="ghost" size="icon" aria-label="Toggle language" onClick={toggleLocale}>
         <Languages className="h-4 w-4" />

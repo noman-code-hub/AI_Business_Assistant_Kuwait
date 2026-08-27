@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, Send, Plus, Search } from "lucide-react";
+import { PERMISSIONS } from "@aba/shared";
 import { invoices, business, products } from "@/data/dummy";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/primitives";
+import { usePermissions } from "@/app/providers/permissions-provider";
 import { cn, formatKwd } from "@/lib/utils";
 
 type Invoice = (typeof invoices)[number];
@@ -46,6 +48,8 @@ function buildPreview(invoice: Invoice) {
 export default function InvoicesPage() {
   const [selected, setSelected] = useState<Invoice>(invoices[0]);
   const [search, setSearch] = useState("");
+  const { can } = usePermissions();
+  const canCreate = can(PERMISSIONS.INVOICES_CREATE);
   const preview = buildPreview(selected);
 
   const filtered = invoices.filter(
@@ -61,10 +65,12 @@ export default function InvoicesPage() {
         title="Invoices"
         description="Billing, payment status, and invoice preview."
         actions={
-          <Button>
-            <Plus className="h-4 w-4" />
-            New invoice
-          </Button>
+          canCreate ? (
+            <Button>
+              <Plus className="h-4 w-4" />
+              New invoice
+            </Button>
+          ) : undefined
         }
       />
 

@@ -35,6 +35,7 @@ export const firebaseApp: FirebaseApp = initializeApp(firebaseConfig);
 
 export const auth: Auth = getAuth(firebaseApp);
 export const db: Firestore = getFirestore(firebaseApp);
+/** Firebase Storage client — used for logo uploads (`services/storage/logo-upload.ts`). */
 export const storage: FirebaseStorage = getStorage(firebaseApp);
 
 let analytics: Analytics | null = null;

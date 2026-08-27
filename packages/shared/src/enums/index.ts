@@ -10,4 +10,6 @@ export {
   EntityStatus,
   AppointmentStatus,
   InvoiceStatus,
+  PERMISSIONS,
+  MembershipStatus,
 } from "../constants/index.js";

@@ -34,13 +34,32 @@ export const SubscriptionStatus = {
 
 export type SubscriptionStatus = (typeof SubscriptionStatus)[keyof typeof SubscriptionStatus];
 
+/**
+ * Business membership lifecycle.
+ * Only ACTIVE memberships receive normal tenant permissions (via resolveTenant).
+ */
 export const MembershipStatus = {
   ACTIVE: "active",
   INVITED: "invited",
+  SUSPENDED: "suspended",
+  REMOVED: "removed",
+  /** @deprecated Prefer SUSPENDED — kept for older documents. */
   DISABLED: "disabled",
 } as const;
 
 export type MembershipStatus = (typeof MembershipStatus)[keyof typeof MembershipStatus];
+
+/** Statuses that must never grant business API access. */
+export const INACTIVE_MEMBERSHIP_STATUSES: readonly MembershipStatus[] = [
+  MembershipStatus.INVITED,
+  MembershipStatus.SUSPENDED,
+  MembershipStatus.REMOVED,
+  MembershipStatus.DISABLED,
+];
+
+export function isActiveMembershipStatus(status: string | null | undefined): boolean {
+  return status === MembershipStatus.ACTIVE;
+}
 
 export const UserProfileStatus = {
   ACTIVE: "active",

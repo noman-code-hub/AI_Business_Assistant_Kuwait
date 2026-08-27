@@ -1,10 +1,12 @@
 import { motion } from "framer-motion";
 import { Mail, MessageSquare, MoreHorizontal, UserPlus } from "lucide-react";
+import { PERMISSIONS } from "@aba/shared";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/primitives";
+import { usePermissions } from "@/app/providers/permissions-provider";
 import { team } from "@/data/dummy";
 import { abaMotion } from "@/design-system/motion/tokens";
 import { cn } from "@/lib/utils";
@@ -24,16 +26,21 @@ const activity = [
 ];
 
 export default function TeamPage() {
+  const { can } = usePermissions();
+  const canInvite = can(PERMISSIONS.TEAM_INVITE) || can(PERMISSIONS.TEAM_MANAGE);
+
   return (
     <div className="space-y-8">
       <PageHeader
         title="Team"
         description="Manage staff roles, availability, and activity."
         actions={
-          <Button type="button">
-            <UserPlus className="h-4 w-4" />
-            Invite member
-          </Button>
+          canInvite ? (
+            <Button type="button">
+              <UserPlus className="h-4 w-4" />
+              Invite member
+            </Button>
+          ) : undefined
         }
       />
 

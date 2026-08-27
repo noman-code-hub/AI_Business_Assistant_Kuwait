@@ -1,6 +1,6 @@
-import type { TenantMembership, BusinessMember, Role } from "@aba/shared";
-import { AppError } from "@aba/shared";
-import { getDb } from "../db/firestore.js";
+import type { TenantMembership, BusinessMember, Role, MembershipStatus } from "@aba/shared";
+import { AppError, Role as Roles, isActiveMembershipStatus, normalizeRole } from "@aba/shared";
+import { getDb, type DocumentData } from "../db/firestore.js";
 import { TopLevel, membershipId } from "../db/collections.js";
 import { createTimestamps, serializeDoc, softDeleteStamp, touchUpdatedAt } from "../db/timestamps.js";
 
@@ -15,12 +15,12 @@ export class BusinessMemberRepository {
     if (!snap.exists) return null;
     const data = snap.data()!;
     if (data.deletedAt) return null;
-    return serializeDoc<BusinessMember>(snap.id, data);
+    return this.hydrate(snap.id, data);
   }
 
   async getActiveMembership(userId: string, tenantId: string): Promise<BusinessMember | null> {
     const membership = await this.get(userId, tenantId);
-    if (!membership || membership.status !== "active") return null;
+    if (!membership || !isActiveMembershipStatus(membership.status)) return null;
     return membership;
   }
 
@@ -28,7 +28,24 @@ export class BusinessMemberRepository {
     const snap = await this.col().where("userId", "==", userId).where("status", "==", "active").get();
     return snap.docs
       .filter((d) => !d.data().deletedAt)
-      .map((d) => serializeDoc<BusinessMember>(d.id, d.data()));
+      .map((d) => this.hydrate(d.id, d.data()));
+  }
+
+  async listByTenant(tenantId: string): Promise<BusinessMember[]> {
+    if (!tenantId) throw AppError.validation("tenantId is required");
+    const snap = await this.col().where("tenantId", "==", tenantId).get();
+    return snap.docs
+      .filter((d) => !d.data().deletedAt)
+      .map((d) => this.hydrate(d.id, d.data()))
+      .filter((m) => m.status !== "removed");
+  }
+
+  /** Count active OWNER memberships for last-owner protection. */
+  async countActiveOwners(tenantId: string): Promise<number> {
+    const members = await this.listByTenant(tenantId);
+    return members.filter(
+      (m) => isActiveMembershipStatus(m.status) && normalizeRole(m.role) === Roles.OWNER
+    ).length;
   }
 
   async create(data: {
@@ -48,7 +65,7 @@ export class BusinessMemberRepository {
       ...createTimestamps(),
     });
     const created = await ref.get();
-    return serializeDoc<BusinessMember>(id, created.data()!);
+    return this.hydrate(id, created.data()!);
   }
 
   async update(
@@ -69,7 +86,22 @@ export class BusinessMemberRepository {
   async softDelete(userId: string, tenantId: string): Promise<void> {
     const existing = await this.get(userId, tenantId);
     if (!existing) throw AppError.notFound("membership");
-    await this.col().doc(membershipId(userId, tenantId)).set(softDeleteStamp(), { merge: true });
+    await this.col()
+      .doc(membershipId(userId, tenantId))
+      .set(
+        {
+          status: "removed" satisfies MembershipStatus,
+          ...softDeleteStamp(),
+        },
+        { merge: true }
+      );
+  }
+
+  private hydrate(id: string, data: DocumentData): BusinessMember {
+    const member = serializeDoc<BusinessMember>(id, data);
+    const role = normalizeRole(String(member.role));
+    if (role) member.role = role;
+    return member;
   }
 }
 

@@ -139,4 +139,14 @@ describe("Firestore security rules — tenant isolation", () => {
       })
     );
   });
+
+  it("TEST 9: client cannot forge membership role to owner", async () => {
+    const db = testEnv.authenticatedContext(userA).firestore();
+    await assertFails(
+      db.doc(`tenantMemberships/${userA}_${tenantA}`).update({
+        role: "owner",
+        status: "active",
+      })
+    );
+  });
 });

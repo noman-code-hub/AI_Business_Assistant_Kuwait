@@ -1,13 +1,14 @@
 import type { NextFunction, Request, Response } from "express";
-import { AppError } from "@aba/shared";
+import { AppError, normalizeRole } from "@aba/shared";
 import { businessMemberRepository } from "../repositories/business-member.repository.js";
 import { businessRepository } from "../repositories/business.repository.js";
 import { isFirebaseAdminConfigured } from "../services/firebase/admin.js";
 import { appConfig } from "../config/index.js";
+import { membershipId } from "../db/collections.js";
 
 /**
- * Resolves trusted tenantId from X-Tenant-Id after verifying active membership.
- * Never trusts client tenantId alone — membership must match authenticated user.
+ * Resolves trusted tenantId + membership role after verifying ACTIVE membership.
+ * Never trusts client-supplied role, permissions, or tenantId alone.
  */
 export async function resolveTenantMiddleware(
   req: Request,
@@ -30,6 +31,7 @@ export async function resolveTenantMiddleware(
     // Local stub when Admin is not configured (dev-token path).
     if (appConfig.isLocal && user.uid === "dev-user" && !isFirebaseAdminConfigured()) {
       res.locals.tenantId = tenantId;
+      res.locals.membershipId = membershipId(user.uid, tenantId);
       res.locals.role = "owner";
       next();
       return;
@@ -46,6 +48,12 @@ export async function resolveTenantMiddleware(
       return;
     }
 
+    const role = normalizeRole(membership.role);
+    if (!role) {
+      next(AppError.tenantAccessDenied("Membership role is invalid."));
+      return;
+    }
+
     const tenant = await businessRepository.getById(tenantId);
     if (!tenant) {
       next(AppError.notFound("tenant"));
@@ -57,7 +65,8 @@ export async function resolveTenantMiddleware(
     }
 
     res.locals.tenantId = tenantId;
-    res.locals.role = membership.role;
+    res.locals.membershipId = membership.id;
+    res.locals.role = role;
     next();
   } catch (err) {
     next(err);

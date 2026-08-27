@@ -43,8 +43,8 @@ service cloud.firestore {
 
     match /tenants/{tenantId} {
       allow read: if isTenantMember(tenantId);
-      allow create: if isSignedIn()
-        && request.resource.data.ownerUid == request.auth.uid;
+      // Phase 3: tenant creation is Admin SDK (API) only
+      allow create: if false;
       allow update: if isOwnerOrAdmin(tenantId);
       allow delete: if false;
 
@@ -149,12 +149,9 @@ service cloud.firestore {
     match /tenantMemberships/{membershipId} {
       allow read: if isSignedIn()
         && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn()
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.role == 'owner'
-        && request.resource.data.status == 'active';
-      allow update: if isSignedIn()
-        && resource.data.userId == request.auth.uid;
+      // Membership create/update/delete is Admin SDK (API) only — clients cannot forge role/status.
+      allow create: if false;
+      allow update: if false;
       allow delete: if false;
     }
 

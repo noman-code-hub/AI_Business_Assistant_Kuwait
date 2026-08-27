@@ -18,136 +18,77 @@ Supported methods (planned):
 ```
 Client signs in with Firebase Auth
  → receives ID Token
- → Axios interceptor attaches Authorization: Bearer <token>
+ → API client attaches Authorization: Bearer <token>
  → API middleware verifies token via Firebase Admin
- → attaches req.user = { uid, email, claims }
+ → attaches res.locals.user = { uid, email, emailVerified }
 ```
 
 ### Custom Claims (lightweight)
 
-```json
-{
-  "platformRole": "user" | "superadmin",
-  "tenants": {
-    "tenant_abc": "owner",
-    "tenant_xyz": "staff"
-  }
-}
-```
-
-Claims are **cache hints** for UX and coarse checks.  
-**Source of truth** for membership remains Firestore `tenantMemberships`.
-
-Claims are refreshed on:
-
-- Invite accept
-- Role change
-- Membership revoke
-- Tenant create
-
-### Session Strategy
-
-| Client | Mechanism |
-|--------|-----------|
-| Web SPA | Firebase Auth persistence (IndexedDB) |
-| API | Stateless Bearer verification each request |
-| Public booking | Unauthenticated or customer OTP (later) |
-
-No long-lived custom JWTs issued by Express for v1.
+Claims may be used later as UX hints. **Source of truth** for membership remains Firestore `tenantMemberships`.
 
 ---
 
-## Authorization (What can you do?)
+## Authorization (What can you do?) — Phase 4 RBAC
 
-### Model: RBAC + Permissions (HubSpot / Salesforce style)
+See also: [PHASE4_ROLES_PERMISSIONS.md](./PHASE4_ROLES_PERMISSIONS.md)
 
-#### Roles
-
-| Role | Intent |
-|------|--------|
-| `owner` | Full control + billing |
-| `admin` | Full ops except billing transfer |
-| `manager` | Team + customers + bookings |
-| `staff` | Assigned records only |
-| `readonly` | View-only |
-
-#### Permissions (examples)
+### Model
 
 ```
-customers:read
-customers:write
-customers:delete
-appointments:read
-appointments:write
-inbox:read
-inbox:reply
-ai:use
-whatsapp:send
-invoices:read
-invoices:write
-invoices:export
-settings:manage
-billing:manage
-staff:manage
-reports:view
+authenticate → resolveTenant (ACTIVE membership) → requirePermission → controller
 ```
 
-Role → permission matrix lives in `packages/shared/src/constants/permissions.ts`.
+Roles (on `BusinessMember` / `tenantMemberships`):
+
+`owner` | `admin` | `manager` | `staff` | `receptionist` | `accountant` | `viewer`
+
+Permissions live in `packages/shared/src/constants/permissions.ts` (`resource.action`).
 
 ### Enforcement Layers
 
 | Layer | Responsibility |
 |-------|----------------|
-| Firestore Rules | Defense-in-depth for direct client access |
-| API `authorize` middleware | Primary enforcement |
-| Service-level checks | Record ownership (staff scoping) |
-| UI `usePermissions` | Hide/disable controls only |
+| Firestore Rules | Defense-in-depth; membership role/status not client-writable |
+| API `requirePermission` | Primary enforcement |
+| Service-level checks | Last-owner, cross-tenant membership targets |
+| UI `usePermissions` / `can()` | Hide/disable controls only |
 
 **Never rely on UI alone.**
 
 ### Middleware Contract
 
 ```ts
-authorize("customers:write")
-authorizeAny(["invoices:write", "billing:manage"])
-authorizeRole(["owner", "admin"])
+requirePermission(PERMISSIONS.CUSTOMERS_CREATE)
+requireAnyPermission([PERMISSIONS.SETTINGS_READ, PERMISSIONS.SETTINGS_MANAGE])
+authorizeRole([Role.OWNER, Role.ADMIN]) // coarse; prefer permissions
 ```
 
-### Staff Record Scoping
+### Errors
 
-For `staff` role:
-
-- Appointments: only `assignedStaffId === uid`
-- Inbox: only assigned conversations
-- Customers: only if linked to assigned work (configurable per tenant)
+- `PERMISSION_DENIED` (403)
+- `TENANT_ACCESS_DENIED` (403)
+- `LAST_OWNER_REQUIRED` (403)
+- `TENANT_SUSPENDED` (403)
 
 ---
 
 ## Platform Superadmin
 
-Separate from tenant roles:
-
-- `platformRole: superadmin`
-- Access via internal admin console (future `apps/admin`)
-- Can impersonate tenant **only with audit log**
-- Never mixed into tenant owner permissions
+Separate from tenant roles (future `apps/admin`). Never mixed into tenant owner permissions.
 
 ---
 
 ## Invite Flow
 
-1. Owner/admin creates invite (`tenantInvites`)
-2. Email / WhatsApp link with token
-3. User signs up / signs in
-4. Membership created; claims refreshed
-5. Invite marked accepted
+Planned for a later phase. Membership statuses already include `invited`.
 
 ---
 
 ## Security Invariants
 
-1. User without membership cannot access tenant data
-2. Suspended tenant → all API calls return `TENANT_SUSPENDED`
-3. Deleted membership → immediate access loss (token may be old; membership check always runs)
-4. Cross-tenant IDOR prevented by repository `tenantId` binding
-5. Webhook endpoints use signature verification, not user auth
+1. User without ACTIVE membership cannot access tenant data
+2. Suspended tenant → `TENANT_SUSPENDED`
+3. Client cannot forge `role` or `permissions`
+4. OWNER assignment is not available via generic role-update API
+5. Last active OWNER cannot be demoted/removed

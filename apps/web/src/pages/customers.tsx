@@ -11,6 +11,8 @@ import { EmptyState } from "@/components/feedback/empty-state";
 import { Spinner } from "@/components/feedback/spinner";
 import { useCustomers } from "@/hooks/use-customers";
 import { useTenant } from "@/app/providers/tenant-provider";
+import { usePermissions } from "@/app/providers/permissions-provider";
+import { PERMISSIONS } from "@aba/shared";
 import type { CustomerDoc } from "@/services/firestore";
 
 function formatUpdatedAt(customer: CustomerDoc): string {
@@ -24,6 +26,8 @@ function formatUpdatedAt(customer: CustomerDoc): string {
 
 export default function CustomersPage() {
   const { tenant } = useTenant();
+  const { can } = usePermissions();
+  const canCreate = can(PERMISSIONS.CUSTOMERS_CREATE);
   const { customers, loading, error, addCustomer } = useCustomers();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Inactive">("All");
@@ -87,14 +91,16 @@ export default function CustomersPage() {
             : "Manage contacts stored in Firestore"
         }
         actions={
-          <Button onClick={() => setShowForm((v) => !v)}>
-            <UserPlus className="h-4 w-4" />
-            {showForm ? "Cancel" : "Add customer"}
-          </Button>
+          canCreate ? (
+            <Button onClick={() => setShowForm((v) => !v)}>
+              <UserPlus className="h-4 w-4" />
+              {showForm ? "Cancel" : "Add customer"}
+            </Button>
+          ) : undefined
         }
       />
 
-      {showForm ? (
+      {showForm && canCreate ? (
         <Card className="mb-6">
           <CardContent className="p-5">
             <form className="grid gap-4 sm:grid-cols-2" onSubmit={(e) => void handleCreate(e)}>

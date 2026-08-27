@@ -1,9 +1,11 @@
 export const ErrorCode = {
   UNAUTHORIZED: "UNAUTHORIZED",
   FORBIDDEN: "FORBIDDEN",
+  PERMISSION_DENIED: "PERMISSION_DENIED",
   TENANT_REQUIRED: "TENANT_REQUIRED",
   TENANT_ACCESS_DENIED: "TENANT_ACCESS_DENIED",
   TENANT_SUSPENDED: "TENANT_SUSPENDED",
+  LAST_OWNER_REQUIRED: "LAST_OWNER_REQUIRED",
   NOT_FOUND: "NOT_FOUND",
   VALIDATION_ERROR: "VALIDATION_ERROR",
   CONFLICT: "CONFLICT",
@@ -19,9 +21,11 @@ export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
 export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   UNAUTHORIZED: 401,
   FORBIDDEN: 403,
+  PERMISSION_DENIED: 403,
   TENANT_REQUIRED: 400,
   TENANT_ACCESS_DENIED: 403,
   TENANT_SUSPENDED: 403,
+  LAST_OWNER_REQUIRED: 403,
   NOT_FOUND: 404,
   VALIDATION_ERROR: 422,
   CONFLICT: 409,
@@ -67,6 +71,18 @@ export class AppError extends Error {
     return new AppError(ErrorCode.FORBIDDEN, message);
   }
 
+  static permissionDenied(
+    message = "You do not have permission to perform this action."
+  ): AppError {
+    return new AppError(ErrorCode.PERMISSION_DENIED, message);
+  }
+
+  static lastOwnerRequired(
+    message = "A business must retain at least one active owner."
+  ): AppError {
+    return new AppError(ErrorCode.LAST_OWNER_REQUIRED, message);
+  }
+
   static notFound(resource = "Resource"): AppError {
     return new AppError(ErrorCode.NOT_FOUND, `${resource} not found`);
   }
@@ -87,8 +103,8 @@ export class AppError extends Error {
     return new AppError(ErrorCode.TENANT_REQUIRED, "X-Tenant-Id header is required");
   }
 
-  static tenantAccessDenied(): AppError {
-    return new AppError(ErrorCode.TENANT_ACCESS_DENIED, "Not a member of this tenant");
+  static tenantAccessDenied(message = "You do not have access to this business."): AppError {
+    return new AppError(ErrorCode.TENANT_ACCESS_DENIED, message);
   }
 
   static tenantSuspended(): AppError {

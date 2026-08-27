@@ -32,8 +32,16 @@ export type MembershipDoc = {
   id: string;
   tenantId: string;
   userId: string;
-  role: "owner" | "admin" | "manager" | "staff" | "readonly";
-  status: "active" | "invited" | "disabled";
+  role:
+    | "owner"
+    | "admin"
+    | "manager"
+    | "staff"
+    | "receptionist"
+    | "accountant"
+    | "viewer"
+    | "readonly";
+  status: "active" | "invited" | "suspended" | "removed" | "disabled";
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 };
@@ -108,6 +116,10 @@ export async function createTenantForOwner(user: User, name?: string): Promise<{
   return { tenant, membership };
 }
 
+/**
+ * @deprecated Phase 3: businesses are created via POST /api/v1/tenants.
+ * Kept for reference; no longer auto-creates tenants.
+ */
 export async function ensureUserTenant(user: User): Promise<{
   tenant: TenantDoc;
   membership: MembershipDoc;
@@ -122,6 +134,5 @@ export async function ensureUserTenant(user: User): Promise<{
     }
   }
 
-  const created = await createTenantForOwner(user);
-  return { ...created, created: true };
+  throw new Error("No business found. Complete onboarding to create one.");
 }

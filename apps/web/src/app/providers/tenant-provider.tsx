@@ -8,53 +8,65 @@ import {
   type ReactNode,
 } from "react";
 import { FirebaseError } from "firebase/app";
+import type { BusinessSummary } from "@aba/shared";
 import { useAuth } from "@/app/providers/auth-provider";
-import {
-  ensureUserProfile,
-  ensureUserTenant,
-  type MembershipDoc,
-  type TenantDoc,
-  type UserProfileDoc,
-} from "@/services/firestore";
+import { ensureUserProfile, type UserProfileDoc } from "@/services/firestore";
+import { listMyBusinesses } from "@/services/api/tenants.api";
+import { ApiClientError } from "@/services/api/client";
+import { getStoredActiveTenantId, setStoredActiveTenantId } from "@/services/api/client";
 
-function mapFirestoreError(err: unknown): string {
+function mapError(err: unknown): string {
+  if (err instanceof ApiClientError) {
+    if (err.code === "UNAUTHORIZED" || err.status === 401) {
+      return "API authentication failed. Ensure the API is running and Firebase Admin is configured.";
+    }
+    return err.message;
+  }
   if (err instanceof FirebaseError) {
     if (err.code === "permission-denied") {
-      return "Firestore blocked the write (permission-denied). Publish firebase/firestore.rules in Firebase Console → Firestore → Rules, then click Retry.";
-    }
-    if (err.code === "failed-precondition") {
-      return "Firestore needs an index for this query. Open the link in the browser console error, create the index, then retry.";
+      return "Firestore permission denied. Publish firebase/firestore.rules, then retry.";
     }
     return `${err.code}: ${err.message}`;
   }
   if (err instanceof Error) return err.message;
-  return "Failed to load workspace from Firestore";
+  return "Failed to load businesses";
 }
 
 type TenantContextValue = {
   profile: UserProfileDoc | null;
-  tenant: TenantDoc | null;
-  membership: MembershipDoc | null;
+  businesses: BusinessSummary[];
+  /** Active tenant id (canonical business id). */
+  tenantId: string | null;
+  tenant: BusinessSummary | null;
+  membershipRole: string | null;
   loading: boolean;
   error: string | null;
+  needsOnboarding: boolean;
   refresh: () => Promise<void>;
+  switchBusiness: (businessId: string) => Promise<void>;
 };
 
 const TenantContext = createContext<TenantContextValue | null>(null);
 
+function pickActiveId(businesses: BusinessSummary[], preferred: string | null): string | null {
+  if (!businesses.length) return null;
+  if (preferred && businesses.some((b) => b.id === preferred)) return preferred;
+  return businesses[0]!.id;
+}
+
 export function TenantProvider({ children }: { children: ReactNode }) {
   const { firebaseUser, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<UserProfileDoc | null>(null);
-  const [tenant, setTenant] = useState<TenantDoc | null>(null);
-  const [membership, setMembership] = useState<MembershipDoc | null>(null);
+  const [businesses, setBusinesses] = useState<BusinessSummary[]>([]);
+  const [tenantId, setTenantId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const bootstrap = useCallback(async () => {
     if (!firebaseUser) {
       setProfile(null);
-      setTenant(null);
-      setMembership(null);
+      setBusinesses([]);
+      setTenantId(null);
       setLoading(false);
       setError(null);
       return;
@@ -64,16 +76,18 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const nextProfile = await ensureUserProfile(firebaseUser);
-      const { tenant: nextTenant, membership: nextMembership } =
-        await ensureUserTenant(firebaseUser);
       setProfile(nextProfile);
-      setTenant(nextTenant);
-      setMembership(nextMembership);
+
+      const list = await listMyBusinesses();
+      setBusinesses(list);
+      // Prefer last selection from localStorage only if user still has membership
+      const active = pickActiveId(list, getStoredActiveTenantId());
+      setTenantId(active);
+      setStoredActiveTenantId(active);
     } catch (err) {
-      setError(mapFirestoreError(err));
-      setProfile(null);
-      setTenant(null);
-      setMembership(null);
+      setError(mapError(err));
+      setBusinesses([]);
+      setTenantId(null);
     } finally {
       setLoading(false);
     }
@@ -84,16 +98,47 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     void bootstrap();
   }, [authLoading, bootstrap]);
 
-  const value = useMemo(
+  const switchBusiness = useCallback(
+    async (businessId: string) => {
+      const target = businesses.find((b) => b.id === businessId);
+      if (!target) {
+        throw new Error("You do not have access to this business.");
+      }
+      setTenantId(businessId);
+      setStoredActiveTenantId(businessId);
+    },
+    [businesses]
+  );
+
+  const tenant = useMemo(
+    () => businesses.find((b) => b.id === tenantId) ?? null,
+    [businesses, tenantId]
+  );
+
+  const value = useMemo<TenantContextValue>(
     () => ({
       profile,
+      businesses,
+      tenantId,
       tenant,
-      membership,
+      membershipRole: tenant?.role ?? null,
       loading: authLoading || loading,
       error,
+      needsOnboarding: !authLoading && !loading && !error && businesses.length === 0,
       refresh: bootstrap,
+      switchBusiness,
     }),
-    [profile, tenant, membership, authLoading, loading, error, bootstrap]
+    [
+      profile,
+      businesses,
+      tenantId,
+      tenant,
+      authLoading,
+      loading,
+      error,
+      bootstrap,
+      switchBusiness,
+    ]
   );
 
   return <TenantContext.Provider value={value}>{children}</TenantContext.Provider>;

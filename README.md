@@ -3,8 +3,8 @@
 Enterprise multi-tenant AI Business Assistant SaaS for Kuwait SMEs  
 (Salons · Clinics · Restaurants · Car Rental · Real Estate · Gyms · Retail · Events · Home Services · SMEs)
 
-> **Current phase: Phase 1 — Firebase & Database foundation** (see [PHASE1_FIREBASE_DATABASE.md](docs/architecture/PHASE1_FIREBASE_DATABASE.md)).  
-> Auth UI and client Firestore bootstrap exist; CRM/AI/WhatsApp product features are later phases.
+> **Current phase: Phase 4 — Roles & Permissions (RBAC)** (see [PHASE4_ROLES_PERMISSIONS.md](docs/architecture/PHASE4_ROLES_PERMISSIONS.md)).  
+> Phases 1–3 delivered Firebase data, auth UI, and multi-tenant business onboarding. CRM/AI/WhatsApp product APIs continue in later phases.
 
 ---
 
@@ -21,6 +21,8 @@ Enterprise multi-tenant AI Business Assistant SaaS for Kuwait SMEs
 | [API Architecture](docs/architecture/API_ARCHITECTURE.md) | REST `/api/v1` design |
 | [Firestore Schema](docs/architecture/FIRESTORE_SCHEMA.md) | Collections & indexes |
 | [Phase 1 Firebase & Database](docs/architecture/PHASE1_FIREBASE_DATABASE.md) | Implemented data layer |
+| [Phase 3 Business & Multi-Tenancy](docs/architecture/PHASE3_BUSINESS_MULTI_TENANCY.md) | Onboarding + tenant switcher |
+| [Phase 4 Roles & Permissions](docs/architecture/PHASE4_ROLES_PERMISSIONS.md) | RBAC, requirePermission, frontend can() |
 | [Security Rules](docs/architecture/SECURITY_RULES.md) | Rules strategy |
 
 ### UI / UX Design

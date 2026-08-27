@@ -39,7 +39,7 @@ export function GuestOnly({ children }: { children: ReactNode }) {
     if (!user.emailVerified) {
       return <Navigate to="/verify-email" replace />;
     }
-    return <Navigate to="/app/dashboard" replace />;
+    return <Navigate to="/app" replace />;
   }
 
   return children;

@@ -55,8 +55,12 @@ describe("resolveTenantMiddleware", () => {
     expect(err.code).toBe("TENANT_ACCESS_DENIED");
   });
 
-  it("sets trusted tenantId and role on success", async () => {
-    getActiveMembership.mockResolvedValue({ role: "admin", status: "active" });
+  it("sets trusted tenantId, role, and membershipId on success", async () => {
+    getActiveMembership.mockResolvedValue({
+      id: "u1_t1",
+      role: "admin",
+      status: "active",
+    });
     getById.mockResolvedValue({ id: "t1", status: "active" });
     const req = {
       header: (n: string) => (n === "X-Tenant-Id" ? "t1" : undefined),
@@ -66,6 +70,7 @@ describe("resolveTenantMiddleware", () => {
     await resolveTenantMiddleware(req, res, next);
     expect(res.locals.tenantId).toBe("t1");
     expect(res.locals.role).toBe("admin");
+    expect(res.locals.membershipId).toBe("u1_t1");
     expect(next).toHaveBeenCalledWith();
   });
 });

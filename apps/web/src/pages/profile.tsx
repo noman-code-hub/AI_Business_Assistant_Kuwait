@@ -10,12 +10,12 @@ import { useAuth } from "@/app/providers/auth-provider";
 import { useTenant } from "@/app/providers/tenant-provider";
 import { updateProfile } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { Collections } from "@/services/firestore";
 
 export default function ProfilePage() {
   const { user, firebaseUser, reloadUser, getIdToken, error, clearError } = useAuth();
-  const { tenant, membership, profile, refresh } = useTenant();
+  const { tenant, membershipRole, profile, refresh } = useTenant();
   const [displayName, setDisplayName] = useState(user?.displayName ?? "");
   const [saving, setSaving] = useState(false);
   const [tokenPreview, setTokenPreview] = useState<string | null>(null);
@@ -66,7 +66,7 @@ export default function ProfilePage() {
           <div className="flex-1 text-center sm:text-left">
             <h2 className="text-xl font-semibold">{name}</h2>
             <p className="text-muted-foreground">
-              {membership?.role ?? "member"} · {tenant?.name ?? "Workspace"}
+              {membershipRole ?? "member"} · {tenant?.name ?? "Workspace"}
             </p>
             <Badge variant={user?.emailVerified ? "success" : "warning"} className="mt-3">
               {user?.emailVerified ? "Email verified" : "Email not verified"}

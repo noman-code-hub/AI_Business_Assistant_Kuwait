@@ -14,11 +14,13 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
+import { PERMISSIONS } from "@aba/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/primitives";
+import { usePermissions } from "@/app/providers/permissions-provider";
 import { business } from "@/data/dummy";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +41,8 @@ type SectionId = (typeof sections)[number]["id"];
 
 export default function SettingsPage() {
   const [active, setActive] = useState<SectionId>("company");
+  const { can } = usePermissions();
+  const canManage = can(PERMISSIONS.SETTINGS_MANAGE);
 
   return (
     <div className="relative pb-24">
@@ -301,12 +305,14 @@ export default function SettingsPage() {
 
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/80 bg-card/95 px-4 py-4 shadow-[0_-4px_24px_rgba(15,23,42,0.08)] backdrop-blur-md lg:left-64">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">You have unsaved changes</p>
+          <p className="text-sm text-muted-foreground">
+            {canManage ? "You have unsaved changes" : "Read-only — you cannot change settings"}
+          </p>
           <div className="flex gap-2">
-            <Button type="button" variant="outline">
+            <Button type="button" variant="outline" disabled={!canManage}>
               Discard
             </Button>
-            <Button type="button">
+            <Button type="button" disabled={!canManage}>
               <Save className="h-4 w-4" />
               Save changes
             </Button>
