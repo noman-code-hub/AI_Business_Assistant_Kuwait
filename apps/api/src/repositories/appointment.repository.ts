@@ -26,16 +26,18 @@ export class AppointmentRepository extends TenantScopedRepository<Appointment> {
     limit = 100
   ): Promise<Appointment[]> {
     this.assertTenantId(tenantId);
-    const snap = await this.col(tenantId)
-      .where("tenantId", "==", tenantId)
-      .where("startsAt", ">=", startIso)
-      .where("startsAt", "<=", endIso)
-      .orderBy("startsAt", "asc")
-      .limit(limit)
-      .get();
+    const snap = await this.col(tenantId).where("tenantId", "==", tenantId).limit(500).get();
 
     return snap.docs
-      .filter((d) => !d.data().deletedAt)
+      .filter((d) => {
+        const data = d.data();
+        if (data.deletedAt) return false;
+        const startsAt = typeof data.startsAt === "string" ? data.startsAt : null;
+        if (!startsAt) return false;
+        return startsAt >= startIso && startsAt <= endIso;
+      })
+      .sort((a, b) => String(a.data().startsAt).localeCompare(String(b.data().startsAt)))
+      .slice(0, limit)
       .map((d) => serializeDoc<Appointment>(d.id, d.data()));
   }
 }

@@ -4,7 +4,7 @@ import { asyncHandler } from "../../../lib/async-handler.js";
 import { authenticateMiddleware } from "../../../middleware/authenticate.js";
 import { resolveTenantMiddleware } from "../../../middleware/resolve-tenant.js";
 import { requirePermission } from "../../../middleware/authorize.js";
-import { createService, listServices } from "../../customers/controllers/customers.controller.js";
+import { createService, listServices } from "../controllers/services.controller.js";
 
 export const servicesRouter = Router();
 

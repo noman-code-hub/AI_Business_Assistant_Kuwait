@@ -14,6 +14,7 @@ import AiChatPage from "@/pages/ai-chat";
 import AppointmentsPage from "@/pages/appointments";
 import CalendarPage from "@/pages/calendar";
 import CustomersPage from "@/pages/customers";
+import CustomerDetailPage from "@/pages/customer-detail";
 import CrmPage from "@/pages/crm";
 import InvoicesPage from "@/pages/invoices";
 import QuotationsPage from "@/pages/quotations";
@@ -111,6 +112,14 @@ export default function App() {
                 element={
                   <RequirePermission permission={PERMISSIONS.CUSTOMERS_READ}>
                     <CustomersPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="customers/:customerId"
+                element={
+                  <RequirePermission permission={PERMISSIONS.CUSTOMERS_READ}>
+                    <CustomerDetailPage />
                   </RequirePermission>
                 }
               />

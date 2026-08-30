@@ -1,78 +1,94 @@
 import type { Request, Response } from "express";
-import { AppError, EntityStatus } from "@aba/shared";
+import {
+  AppError,
+  normalizeRole,
+  type ListCustomersQuery,
+  type CreateCustomerInput,
+  type UpdateCustomerInput,
+  type CustomerImportBody,
+} from "@aba/shared";
 import { sendSuccess } from "../../../lib/api-response.js";
-import { customerRepository } from "../../../repositories/customer.repository.js";
-import { serviceRepository } from "../../../repositories/catalog.repository.js";
+import {
+  createCustomer as createCustomerService,
+  deleteCustomer as deleteCustomerService,
+  exportCustomers,
+  getCustomer as getCustomerService,
+  getCustomerDetail,
+  listCustomers as listCustomersService,
+  previewOrImportCustomers,
+  updateCustomer as updateCustomerService,
+  type CustomerAuthz,
+} from "../services/customers.service.js";
 
-/** Tenant-scoped customer read — used for isolation tests and Phase 3 readiness. */
-export async function getCustomer(req: Request, res: Response): Promise<void> {
+function authz(res: Response): CustomerAuthz {
+  const userId = res.locals.user?.uid;
   const tenantId = res.locals.tenantId;
-  const customerId = String(req.params.customerId ?? "");
-  if (!tenantId) throw AppError.tenantRequired();
-  if (!customerId) throw AppError.validation("customerId is required");
+  const role = normalizeRole(res.locals.role);
+  if (!userId || !tenantId || !role) {
+    throw AppError.unauthorized();
+  }
+  return { userId, tenantId, role };
+}
 
-  const customer = await customerRepository.getById(tenantId, customerId);
-  if (!customer) throw AppError.notFound("customer");
+function validatedQuery<T>(req: Request): T {
+  const q = (req as Request & { validatedQuery?: T }).validatedQuery;
+  if (!q) throw AppError.validation("Invalid query parameters");
+  return q;
+}
+
+export async function listCustomers(req: Request, res: Response): Promise<void> {
+  const ctx = authz(res);
+  const query = validatedQuery<ListCustomersQuery>(req);
+  const result = await listCustomersService(ctx, query);
+  sendSuccess(res, result, { pagination: result.pagination });
+}
+
+export async function getCustomer(req: Request, res: Response): Promise<void> {
+  const ctx = authz(res);
+  const customerId = String(req.params.customerId ?? "");
+  if (!customerId) throw AppError.validation("customerId is required");
+  const customer = await getCustomerService(ctx, customerId);
   sendSuccess(res, { customer });
 }
 
-export async function listCustomers(_req: Request, res: Response): Promise<void> {
-  const tenantId = res.locals.tenantId;
-  if (!tenantId) throw AppError.tenantRequired();
-  const customers = await customerRepository.list(tenantId, { limit: 50 });
-  sendSuccess(res, { customers });
+export async function getCustomerDetailHandler(req: Request, res: Response): Promise<void> {
+  const ctx = authz(res);
+  const customerId = String(req.params.customerId ?? "");
+  if (!customerId) throw AppError.validation("customerId is required");
+  const detail = await getCustomerDetail(ctx, customerId);
+  sendSuccess(res, detail);
 }
 
 export async function createCustomer(req: Request, res: Response): Promise<void> {
-  const tenantId = res.locals.tenantId;
-  if (!tenantId) throw AppError.tenantRequired();
-
-  const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
-  if (!name) throw AppError.validation("name is required");
-
-  const customer = await customerRepository.create(tenantId, {
-    tenantId,
-    name,
-    email: req.body?.email,
-    phone: req.body?.phone,
-    status: EntityStatus.ACTIVE,
-    source: "manual",
-  });
+  const ctx = authz(res);
+  const customer = await createCustomerService(ctx, req.body as CreateCustomerInput);
   sendSuccess(res, { customer }, { status: 201 });
 }
 
-export async function createService(req: Request, res: Response): Promise<void> {
-  const tenantId = res.locals.tenantId;
-  if (!tenantId) throw AppError.tenantRequired();
-
-  // Reject client-supplied tenantId mismatch
-  if (req.body?.tenantId && req.body.tenantId !== tenantId) {
-    throw AppError.tenantAccessDenied();
-  }
-
-  const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
-  const price = Number(req.body?.price);
-  const durationMinutes = Number(req.body?.durationMinutes);
-  if (!name) throw AppError.validation("name is required");
-  if (!Number.isFinite(price) || price < 0) throw AppError.validation("price is invalid");
-  if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
-    throw AppError.validation("durationMinutes is invalid");
-  }
-
-  const service = await serviceRepository.create(tenantId, {
-    tenantId,
-    name,
-    description: req.body?.description,
-    price: { amount: price, currency: "KWD" },
-    durationMinutes,
-    status: EntityStatus.ACTIVE,
-  });
-  sendSuccess(res, { service }, { status: 201 });
+export async function updateCustomer(req: Request, res: Response): Promise<void> {
+  const ctx = authz(res);
+  const customerId = String(req.params.customerId ?? "");
+  if (!customerId) throw AppError.validation("customerId is required");
+  const customer = await updateCustomerService(ctx, customerId, req.body as UpdateCustomerInput);
+  sendSuccess(res, { customer });
 }
 
-export async function listServices(_req: Request, res: Response): Promise<void> {
-  const tenantId = res.locals.tenantId;
-  if (!tenantId) throw AppError.tenantRequired();
-  const services = await serviceRepository.list(tenantId, { limit: 50 });
-  sendSuccess(res, { services });
+export async function deleteCustomer(req: Request, res: Response): Promise<void> {
+  const ctx = authz(res);
+  const customerId = String(req.params.customerId ?? "");
+  if (!customerId) throw AppError.validation("customerId is required");
+  await deleteCustomerService(ctx, customerId);
+  sendSuccess(res, { deleted: true });
+}
+
+export async function importCustomers(req: Request, res: Response): Promise<void> {
+  const ctx = authz(res);
+  const result = await previewOrImportCustomers(ctx, req.body as CustomerImportBody);
+  sendSuccess(res, result, { status: req.body?.confirm ? 201 : 200 });
+}
+
+export async function exportCustomersHandler(_req: Request, res: Response): Promise<void> {
+  const ctx = authz(res);
+  const result = await exportCustomers(ctx);
+  sendSuccess(res, result);
 }

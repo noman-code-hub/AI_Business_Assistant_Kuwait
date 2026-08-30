@@ -23,6 +23,7 @@ Enterprise multi-tenant AI Business Assistant SaaS for Kuwait SMEs
 | [Phase 1 Firebase & Database](docs/architecture/PHASE1_FIREBASE_DATABASE.md) | Implemented data layer |
 | [Phase 3 Business & Multi-Tenancy](docs/architecture/PHASE3_BUSINESS_MULTI_TENANCY.md) | Onboarding + tenant switcher |
 | [Phase 4 Roles & Permissions](docs/architecture/PHASE4_ROLES_PERMISSIONS.md) | RBAC, requirePermission, frontend can() |
+| [Phase 5 Main Dashboard](docs/architecture/PHASE5_MAIN_DASHBOARD.md) | Real-data operational dashboard |
 | [Security Rules](docs/architecture/SECURITY_RULES.md) | Rules strategy |
 
 ### UI / UX Design

@@ -59,6 +59,8 @@ export const PERMISSIONS = {
   SUBSCRIPTION_MANAGE: "subscription.manage",
 
   USAGE_READ: "usage.read",
+
+  DASHBOARD_READ: "dashboard.read",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -69,6 +71,7 @@ const P = PERMISSIONS;
 
 /** Read-only baseline used by VIEWER and composed into other roles. */
 const READ_BASE: Permission[] = [
+  P.DASHBOARD_READ,
   P.CUSTOMERS_READ,
   P.APPOINTMENTS_READ,
   P.INVOICES_READ,
@@ -117,6 +120,7 @@ export const ROLE_PERMISSIONS: Record<Exclude<Role, "owner">, readonly Permissio
   ],
 
   [Role.STAFF]: [
+    P.DASHBOARD_READ,
     P.CUSTOMERS_READ,
     P.CUSTOMERS_CREATE,
     P.CUSTOMERS_UPDATE,
@@ -131,6 +135,7 @@ export const ROLE_PERMISSIONS: Record<Exclude<Role, "owner">, readonly Permissio
   ],
 
   [Role.RECEPTIONIST]: [
+    P.DASHBOARD_READ,
     P.CUSTOMERS_READ,
     P.CUSTOMERS_CREATE,
     P.CUSTOMERS_UPDATE,
@@ -145,6 +150,7 @@ export const ROLE_PERMISSIONS: Record<Exclude<Role, "owner">, readonly Permissio
   ],
 
   [Role.ACCOUNTANT]: [
+    P.DASHBOARD_READ,
     P.CUSTOMERS_READ,
     P.BUSINESS_READ,
     P.INVOICES_READ,

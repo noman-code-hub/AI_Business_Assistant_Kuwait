@@ -1,22 +1,6 @@
 import { KUWAIT_PHONE_PREFIX } from "../constants/locales.js";
 
-/** Normalize Kuwait local numbers to E.164 (+965########). */
-export function normalizeKuwaitPhone(input: string): string | null {
-  const digits = input.replace(/\D/g, "");
-  if (digits.length === 8) {
-    return `${KUWAIT_PHONE_PREFIX}${digits}`;
-  }
-  if (digits.length === 11 && digits.startsWith("965")) {
-    return `+${digits}`;
-  }
-  if (digits.length === 12 && digits.startsWith("965")) {
-    return `+${digits.slice(0, 11)}`;
-  }
-  if (input.startsWith("+965") && digits.length === 11) {
-    return `+${digits}`;
-  }
-  return null;
-}
+export { normalizeKuwaitPhone, normalizeContactPhone } from "./phone.js";
 
 export function formatKwd(amount: number): string {
   return `${amount.toLocaleString("en-KW", {
@@ -28,3 +12,18 @@ export function formatKwd(amount: number): string {
 export function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
+
+export * from "./timezone.js";
+export * from "./money.js";
+export {
+  normalizeCustomerTags,
+  normalizeOptionalContactPhone,
+  normalizeOptionalKuwaitPhone,
+  escapeCsvCell,
+  toCsvRow,
+  parseCsvLine,
+  splitCsvRows,
+} from "./customer.js";
+
+// Re-export prefix for callers that imported from utils historically
+export { KUWAIT_PHONE_PREFIX };

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { NextFunction, Request, Response } from "express";
-import { AppError } from "@aba/shared";
+import { AppError, Role } from "@aba/shared";
 
 const getById = vi.hoisted(() => vi.fn());
 
@@ -10,9 +10,14 @@ vi.mock("../../repositories/customer.repository.js", () => ({
 
 import { getCustomer } from "../../modules/customers/controllers/customers.controller.js";
 
-function mockRes(tenantId?: string) {
+function mockRes(tenantId?: string, userId = "user-1", role = Role.OWNER) {
   return {
-    locals: { tenantId, requestId: "test" },
+    locals: {
+      tenantId,
+      requestId: "test",
+      user: userId ? { uid: userId } : undefined,
+      role,
+    },
     status: vi.fn().mockReturnThis(),
     json: vi.fn().mockReturnThis(),
   } as unknown as Response;
@@ -24,9 +29,6 @@ describe("customer tenant isolation", () => {
   });
 
   it("TEST isolation: Business B context cannot read missing/foreign customer as if it were A", async () => {
-    // Repository already scopes by tenant path + tenantId field.
-    // When tenant B asks for customer that only exists under A, getById returns null → 404.
-    // Cross-tenant doc with wrong tenantId throws FORBIDDEN inside repository.
     getById.mockRejectedValue(AppError.forbidden("Cross-tenant access denied"));
 
     const req = { params: { customerId: "cust-a" } } as unknown as Request;
@@ -55,6 +57,6 @@ describe("customer tenant isolation", () => {
   it("requires tenant context", async () => {
     const req = { params: { customerId: "cust-a" } } as unknown as Request;
     const res = mockRes(undefined);
-    await expect(getCustomer(req, res)).rejects.toMatchObject({ code: "TENANT_REQUIRED" });
+    await expect(getCustomer(req, res)).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 });

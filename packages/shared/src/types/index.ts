@@ -1,3 +1,4 @@
+export type * from "./dashboard.types.js";
 export type * from "./api.types.js";
 export type * from "./common.types.js";
 export type * from "./auth.types.js";

@@ -75,10 +75,15 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const nextProfile = await ensureUserProfile(firebaseUser);
-      setProfile(nextProfile);
+      // Load businesses from API first — do not block on Firestore profile sync.
+      const listPromise = listMyBusinesses();
+      const profilePromise = ensureUserProfile(firebaseUser).catch((profileErr) => {
+        console.warn("User profile sync skipped:", profileErr);
+        return null;
+      });
 
-      const list = await listMyBusinesses();
+      const [list, nextProfile] = await Promise.all([listPromise, profilePromise]);
+      setProfile(nextProfile);
       setBusinesses(list);
       // Prefer last selection from localStorage only if user still has membership
       const active = pickActiveId(list, getStoredActiveTenantId());

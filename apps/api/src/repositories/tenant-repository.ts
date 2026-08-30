@@ -68,6 +68,15 @@ export abstract class TenantScopedRepository<T extends { id: string; tenantId: s
       .map((d) => serializeDoc<T>(d.id, d.data()));
   }
 
+  /** Firestore rejects `undefined` — omit those keys (or use null explicitly in callers). */
+  protected omitUndefined(data: Record<string, unknown>): Record<string, unknown> {
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined) out[key] = value;
+    }
+    return out;
+  }
+
   async create(
     tenantId: string,
     data: Omit<T, "id" | "createdAt" | "updatedAt"> & { id?: string }
@@ -80,12 +89,12 @@ export abstract class TenantScopedRepository<T extends { id: string; tenantId: s
 
     const ref = data.id ? this.col(tenantId).doc(data.id) : this.col(tenantId).doc();
     const { id: _ignore, ...rest } = data as { id?: string } & Record<string, unknown>;
-    const payload = {
+    const payload = this.omitUndefined({
       ...rest,
       tenantId,
       deletedAt: null,
       ...createTimestamps(),
-    };
+    });
     await ref.set(payload);
     const created = await ref.get();
     return serializeDoc<T>(ref.id, created.data()!);
@@ -99,7 +108,7 @@ export abstract class TenantScopedRepository<T extends { id: string; tenantId: s
     const existing = await this.getById(tenantId, id);
     if (!existing) throw AppError.notFound(this.subcollection);
 
-    const safe = { ...(patch as Record<string, unknown>) };
+    const safe = this.omitUndefined({ ...(patch as Record<string, unknown>) });
     delete safe.tenantId;
     delete safe.id;
     delete safe.createdAt;
@@ -122,5 +131,19 @@ export abstract class TenantScopedRepository<T extends { id: string; tenantId: s
 
   async softDelete(tenantId: string, id: string): Promise<void> {
     return this.delete(tenantId, id);
+  }
+
+  /** Count non-deleted documents in tenant subcollection. */
+  async countActive(
+    tenantId: string,
+    options: { status?: string } = {}
+  ): Promise<number> {
+    this.assertTenantId(tenantId);
+    let q = this.col(tenantId).where("tenantId", "==", tenantId);
+    if (options.status) {
+      q = q.where("status", "==", options.status);
+    }
+    const snap = await q.select("deletedAt").get();
+    return snap.docs.filter((d) => !d.data().deletedAt).length;
   }
 }

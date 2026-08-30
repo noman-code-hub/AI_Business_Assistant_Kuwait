@@ -18,6 +18,21 @@ export class InvoiceRepository extends TenantScopedRepository<Invoice> {
       .filter((d) => !d.data().deletedAt)
       .map((d) => serializeDoc<Invoice>(d.id, d.data()));
   }
+
+  /** Invoices that may still have an outstanding balance (sent/overdue). */
+  async listOutstanding(tenantId: string, limit = 200): Promise<Invoice[]> {
+    this.assertTenantId(tenantId);
+    const snap = await this.col(tenantId).where("tenantId", "==", tenantId).limit(500).get();
+
+    return snap.docs
+      .filter((d) => {
+        const data = d.data();
+        if (data.deletedAt) return false;
+        return data.status === "sent" || data.status === "overdue";
+      })
+      .slice(0, limit)
+      .map((d) => serializeDoc<Invoice>(d.id, d.data()));
+  }
 }
 
 export const invoiceRepository = new InvoiceRepository();

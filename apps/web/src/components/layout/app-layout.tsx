@@ -15,6 +15,7 @@ const titles: Record<string, string> = {
   "/app/ai-chat": "AI Chat",
   "/app/appointments": "Appointments",
   "/app/customers": "Customers",
+  "/app/customers/:id": "Customer",
   "/app/crm": "CRM Pipeline",
   "/app/invoices": "Invoices",
   "/app/quotations": "Quotations",

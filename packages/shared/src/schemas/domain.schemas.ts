@@ -167,16 +167,124 @@ export const createBusinessOnboardingSchema = z
 
 export type CreateBusinessOnboardingInput = z.infer<typeof createBusinessOnboardingSchema>;
 
-export const createCustomerSchema = z.object({
-  name: z.string().trim().min(1).max(120),
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  notes: z.string().max(2000).optional(),
-  tags: z.array(z.string().max(40)).max(20).optional(),
-  status: entityStatusSchema.default(EntityStatus.ACTIVE),
+export const customerSourceSchema = z.enum([
+  "manual",
+  "whatsapp",
+  "booking",
+  "import",
+  "website",
+  "ai_assistant",
+  "referral",
+]);
+
+const customerOptionalEmail = z
+  .union([z.string().trim().email().max(254), z.literal("")])
+  .optional()
+  .transform((v) => (v && v.length > 0 ? v.toLowerCase() : undefined));
+
+const customerOptionalPhone = z
+  .union([z.string().trim().max(32), z.literal("")])
+  .optional()
+  .transform((v) => (v && v.length > 0 ? v : undefined));
+
+const customerTagsSchema = z
+  .array(z.string().trim().min(1).max(40))
+  .max(20)
+  .optional()
+  .transform((tags) => {
+    if (!tags) return undefined;
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const raw of tags) {
+      const tag = raw.trim().replace(/\s+/g, " ");
+      if (!tag) continue;
+      const key = tag.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(tag);
+    }
+    return out;
+  });
+
+export const createCustomerSchema = z
+  .object({
+    name: z.string().trim().min(1).max(120),
+    email: customerOptionalEmail,
+    phone: customerOptionalPhone,
+    whatsapp: customerOptionalPhone,
+    address: z
+      .union([z.string().trim().max(500), z.literal("")])
+      .optional()
+      .transform((v) => (v && v.length > 0 ? v : undefined)),
+    notes: z
+      .union([z.string().trim().max(2000), z.literal("")])
+      .optional()
+      .transform((v) => (v && v.length > 0 ? v : undefined)),
+    tags: customerTagsSchema,
+    status: entityStatusSchema.optional().default(EntityStatus.ACTIVE),
+    source: customerSourceSchema.optional().default("manual"),
+    // Explicitly reject client-controlled ownership fields if present in body parsers.
+    tenantId: z.never().optional(),
+    id: z.never().optional(),
+    createdAt: z.never().optional(),
+    updatedAt: z.never().optional(),
+  })
+  .strict();
+
+export const updateCustomerSchema = z
+  .object({
+    name: z.string().trim().min(1).max(120).optional(),
+    email: customerOptionalEmail,
+    phone: customerOptionalPhone,
+    whatsapp: customerOptionalPhone,
+    address: z
+      .union([z.string().trim().max(500), z.literal("")])
+      .optional()
+      .transform((v) => (v === "" ? null : v && v.length > 0 ? v : undefined)),
+    notes: z
+      .union([z.string().trim().max(2000), z.literal("")])
+      .optional()
+      .transform((v) => (v === "" ? null : v && v.length > 0 ? v : undefined)),
+    tags: customerTagsSchema,
+    status: entityStatusSchema.optional(),
+    source: customerSourceSchema.optional(),
+    tenantId: z.never().optional(),
+    id: z.never().optional(),
+    createdAt: z.never().optional(),
+    updatedAt: z.never().optional(),
+  })
+  .strict();
+
+export const listCustomersQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  search: z.string().trim().max(200).optional(),
+  tag: z.string().trim().max(40).optional(),
+  source: customerSourceSchema.optional(),
+  status: entityStatusSchema.optional(),
+  sortBy: z.enum(["name", "createdAt", "updatedAt"]).default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });
 
-export const updateCustomerSchema = createCustomerSchema.partial();
+export const customerIdParamSchema = z.object({
+  customerId: z.string().trim().min(1).max(128),
+});
+
+/** Max CSV payload size (characters ≈ bytes for ASCII). */
+export const CUSTOMER_CSV_MAX_CHARS = 5 * 1024 * 1024;
+/** Max data rows per import (excluding header). */
+export const CUSTOMER_CSV_MAX_ROWS = 5000;
+
+export const customerImportBodySchema = z.object({
+  csv: z.string().min(1).max(CUSTOMER_CSV_MAX_CHARS),
+  /** When false/omitted, only validate + preview. When true, create valid non-duplicate rows. */
+  confirm: z.boolean().optional().default(false),
+});
+
+export type CreateCustomerInput = z.infer<typeof createCustomerSchema>;
+export type UpdateCustomerInput = z.infer<typeof updateCustomerSchema>;
+export type ListCustomersQuery = z.infer<typeof listCustomersQuerySchema>;
+export type CustomerImportBody = z.infer<typeof customerImportBodySchema>;
 
 /** Role change body — OWNER is never assignable via this API. */
 export const updateMembershipRoleSchema = z.object({

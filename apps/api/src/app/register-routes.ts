@@ -5,6 +5,7 @@ import { tenantsRouter } from "../modules/tenants/routes/tenants.routes.js";
 import { customersRouter } from "../modules/customers/routes/customers.routes.js";
 import { servicesRouter } from "../modules/services-catalog/routes/services.routes.js";
 import { membershipsRouter } from "../modules/memberships/routes/memberships.routes.js";
+import { dashboardRouter } from "../modules/dashboard/routes/dashboard.routes.js";
 import { createStubRouter } from "./create-stub-router.js";
 
 export function registerRoutes(): Router {
@@ -13,6 +14,7 @@ export function registerRoutes(): Router {
   api.use("/health", healthRouter);
   api.use("/auth", authRouter);
   api.use("/tenants", tenantsRouter);
+  api.use("/dashboard", dashboardRouter);
   api.use("/customers", customersRouter);
   api.use("/services", servicesRouter);
   api.use("/memberships", membershipsRouter);

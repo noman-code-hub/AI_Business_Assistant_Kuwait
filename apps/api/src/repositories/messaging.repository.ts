@@ -7,6 +7,25 @@ import { createTimestamps, serializeDoc, softDeleteStamp, touchUpdatedAt } from 
 
 export class ConversationRepository extends TenantScopedRepository<Conversation> {
   protected readonly subcollection = "conversations" as const;
+
+  async listByCustomer(
+    tenantId: string,
+    customerId: string,
+    limit = 50
+  ): Promise<Conversation[]> {
+    this.assertTenantId(tenantId);
+    // Path-scoped + in-memory filter avoids extra composite indexes.
+    const snap = await this.col(tenantId).where("tenantId", "==", tenantId).limit(500).get();
+    return snap.docs
+      .filter((d) => !d.data().deletedAt && d.data().customerId === customerId)
+      .sort((a, b) => {
+        const aAt = String(a.data().lastMessageAt ?? a.data().updatedAt ?? "");
+        const bAt = String(b.data().lastMessageAt ?? b.data().updatedAt ?? "");
+        return bAt.localeCompare(aAt);
+      })
+      .slice(0, limit)
+      .map((d) => serializeDoc<Conversation>(d.id, d.data()));
+  }
 }
 
 /**
